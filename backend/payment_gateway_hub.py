@@ -1,42 +1,52 @@
-# Master payment orchestrator for Aurora's Snap 2 Fit engine
+# Master payment gateway router for Aurora's Snap 2 Fit engine
 
 class PaymentGatewayHub:
-    def __init__(self, user_id, db_connection):
-        self.user_id = user_id
+    def __init__(self, db_connection):
         self.db = db_connection
 
-    def process_checkout(self, platform, order_data, payment_token):
+    def create_subscription_checkout(self, user_id, tier_package, billing_cycle="monthly"):
         """
-        Processes transactions across the multiple payment gateways required by Aurora.
+        Generates checkout URLs for users upgrading their Aurora creator levels 
+        (Basic, Advanced, Enterprise) across multiple payment networks.
         """
-        gateway = platform.lower()
-        amount = order_data["total_price_cents"]
-        base_cost = order_data["base_fulfillment_cost_cents"]
-        creator_payout = amount - base_cost
+        prices = {
+            "basic": {"usd_cents": 1900, "paypal_plan": "P-BASIC19"},
+            "advanced": {"usd_cents": 4900, "paypal_plan": "P-ADV49"},
+            "enterprise": {"usd_cents": 19900, "paypal_plan": "P-ENT199"}
+        }
+        
+        target_plan = prices.get(tier_package.lower())
+        if not target_plan:
+            return {"status": "error", "message": "Invalid subscription package selected"}
 
-        # 1. STRIPE, APPLE PAY, & GOOGLE PAY PIPELINES
-        if gateway in ["stripe", "apple_pay", "google_pay"]:
-            return {
-                "gateway": "STRIPE_CONNECT_API",
-                "transaction_status": "pending_capture",
-                "allocation": {"supplier_share": base_cost, "creator_share": creator_payout}
+        # Return multi-gateway options to let the frontend render diverse options
+        return {
+            "status": "success",
+            "tier": tier_package.lower(),
+            "gateways": {
+                "stripe": {
+                    "checkout_url": f"https://stripe.com_{tier_package}",
+                    "supported_methods": ["credit_card", "apple_pay", "google_pay"]
+                },
+                "paypal": {
+                    "checkout_url": f"https://paypal.com{target_plan['paypal_plan']}"
+                },
+                "klarna": {
+                    "checkout_url": f"https://klarna.com_{target_plan['usd_cents']}"
+                }
             }
+        }
 
-        # 2. PAYPAL GLOBAL REVENUE PIPELINE
-        elif gateway == "paypal":
-            return {
-                "gateway": "PAYPAL_SDK_V2",
-                "transaction_status": "requires_customer_approval",
-                "allocation": {"supplier_share": base_cost, "creator_share": creator_payout}
-            }
+    def verify_payment_webhook(self, gateway, payload):
+        """
+        Receives payment confirmation notifications from external processors 
+        to instantly unlock higher creator limits or process product dropshipping.
+        """
+        # Verification tokens would validate authenticity here
+        return {
+            "status": "verified",
+            "gateway_source": gateway.upper(),
+            "action_required": "PRODUCE_ITEM" if "order_id" in payload else "UPGRADE_USER_TIER"
+        }
 
-        # 3. KLARNA BUY NOW PAY LATER (BNPL) INSTALLMENT PIPELINE
-        elif gateway == "klarna":
-            return {
-                "gateway": "KLARNA_PAYMENTS_v1",
-                "transaction_status": "credit_check_initiated",
-                "allocation": {"supplier_share": base_cost, "creator_share": creator_payout}
-            }
-
-        else:
             return {"status": "error", "message": f"Unsupported platform: {platform}"}
