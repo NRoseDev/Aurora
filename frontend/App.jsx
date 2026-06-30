@@ -6,6 +6,7 @@ import Dashboard from './Dashboard';
 import Storefront from './Storefront';
 import Pricing from './Pricing';
 import Constellation from './Constellation';
+import Incubator from './Incubator';
 
 export default function App() {
   const [currentView, setCurrentView] = useState('dashboard');
@@ -20,6 +21,8 @@ export default function App() {
         return <Pricing />;
       case 'constellation':
         return <Constellation />;
+      case 'incubator':
+        return <Incubator />;
       case 'studio':
         return (
           <div style={{ padding: '40px', fontFamily: 'Arial, sans-serif' }}>

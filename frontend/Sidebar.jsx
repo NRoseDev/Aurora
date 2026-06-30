@@ -8,7 +8,8 @@ export default function Sidebar({ currentView, onViewChange }) {
     { id: 'studio', label: '🎨 Snap 2 Fit Studio', category: 'commerce' },
     { id: 'storefront', label: '🛍️ My Storefront', category: 'commerce' },
     { id: 'pricing', label: '💳 Creator Pricing Tiers', category: 'commerce' },
-    { id: 'constellation', label: '🌌 Constellation Hub', category: 'incubator' }
+    { id: 'constellation', label: '🌌 Constellation Hub', category: 'incubator' },
+    { id: 'incubator', label: '🌱 Collective Incubator', category: 'incubator' }
   ];
 
   return (
