@@ -34,3 +34,16 @@ CREATE TABLE publication_queue (
     error_message TEXT, 
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TABLE incubator_rooms (
+    room_id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE room_collaborators (
+    id SERIAL PRIMARY KEY,
+    room_id INT REFERENCES incubator_rooms(room_id) ON DELETE CASCADE,
+    user_id INT REFERENCES users(user_id) ON DELETE CASCADE,
+    revenue_share_percentage NUMERIC(5,2) NOT NULL,
+    labor_contribution_details TEXT
+);
