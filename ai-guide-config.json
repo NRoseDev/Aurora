@@ -1,0 +1,33 @@
+{
+  "ai_guide_framework": {
+    "version": "1.0.0",
+    "component": "FloatingAITourGuide",
+    "settings": {
+      "button_placement": "bottom_right",
+      "interaction_type": "modal_overlay",
+      "video_player": {
+        "autoplay_on_first_load": false,
+        "default_captions_font": "OpenDyslexic",
+        "supported_themes": ["warm_cream", "dark_charcoal"],
+        "accessibility_controls": {
+          "high_contrast_buttons": true,
+          "adjustable_playback_speed": true
+        }
+      },
+      "app_specific_sources": {
+        "soul_echoes": {
+          "video_url": "https://soulechoes.app",
+          "chapters": ["Welcome to Soul Echoes", "Using Sensory Reading Mode", "Launching ASL Engine"]
+        },
+        "size_me_up": {
+          "video_url": "https://sizemeup.app",
+          "chapters": ["Boutique Setup", "Adding Flat-Garment Metrics", "Automated Catalog Filters"]
+        },
+        "aurora": {
+          "video_url": "https://aurora.app",
+          "chapters": ["Understanding the Vaults", "NDA Tracking Gates", "Store Setup"]
+        }
+      }
+    }
+  }
+}
