@@ -1,0 +1,72 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-json"
+}
+
+enum SubscriptionTier {
+  BASELINE   // 1,100 credits per month
+  GROWTH     // Expanded pool
+  UNLIMITED  // Uncapped logic
+}
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model User {
+  id               String           @id @default(uuid())
+  email            String           @unique
+  subscriptionTier SubscriptionTier @default(BASELINE)
+  
+  // Rule 1: Credit Allocation System
+  monthlyCredits   Int              @default(1100)
+  expandablePool   Int              @default(0)
+  
+  // Relations
+  mediaAssets      MediaAsset[]
+  debugSessions    DebugSession[]
+  createdAt        DateTime         @default(now())
+}
+
+model MediaAsset {
+  id            String    @id @default(uuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  originalName  String
+  storageUrl    String    // Cloud storage location
+  aspectRatio   String    // e.g., "16:9" or "9:16" for vertical short-form
+  
+  // Rule 5: Soul Echoes Infrastructure
+  ndaSigned     Boolean   @default(false)
+  watermarked   Boolean   @default(false)
+  timestampHash String    // Digital timestamp security verification
+  
+  // Language tracking for the Artlist-style translation pipeline
+  sourceLanguage String   @default("en")
+  targetLanguages String[] // e.g., ["es", "fr", "ja"]
+  
+  status        JobStatus @default(PENDING)
+  createdAt     DateTime  @default(now())
+}
+
+model DebugSession {
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  fileStateFlag  String   // Identifies the exact broken code file
+  runtimeError   String   // The compilation/terminal error text
+  
+  // Rule 2: Smart Refund Engine (Zero-Penalty Debugging)
+  isRefundedLoop Boolean  @default(true) // Subsequent passes incur 0 credit cost
+  isResolved     Boolean  @default(false)
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
