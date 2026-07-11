@@ -1,6 +1,7 @@
 // This file builds the visual control dashboard where you can see your scheduled posts
 
 import React, { useState } from 'react';
+import CreatorWorkspace from './CreatorWorkspace';
 
 export default function Dashboard() {
   const [caption, setCaption] = useState('');
@@ -57,21 +58,28 @@ export default function Dashboard() {
       </div>
 
       {/* 3. Action Button */}
-      <button 
-        onClick={() => alert(`Aurora is processing your post for: ${selectedPlatforms.join(', ')}`)}
-        style={{
-          width: '100%',
-          padding: '12px',
-          backgroundColor: '#00cc88',
-          color: '#fff',
-          border: 'none',
-          borderRadius: '5px',
-          fontWeight: 'bold',
-          cursor: 'pointer'
-        }}
-      >
-        Schedule Autopost
-      </button>
+      <div style={{ marginBottom: '30px' }}>
+        <button 
+          onClick={() => alert(`Aurora is processing your post for: ${selectedPlatforms.join(', ')}`)}
+          style={{
+            width: '100%',
+            padding: '12px',
+            backgroundColor: '#00cc88',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '5px',
+            fontWeight: 'bold',
+            cursor: 'pointer'
+          }}
+        >
+          Schedule Autopost
+        </button>
+      </div>
+
+      {/* 4. New Translation & Translation Framework */}
+      <div style={{ borderTop: '2px solid #eee', paddingTop: '20px' }}>
+        <CreatorWorkspace />
+      </div>
     </div>
   );
-}
+};
