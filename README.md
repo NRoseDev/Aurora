@@ -4,8 +4,10 @@ Aurora is a unified web and mobile platform designed to bridge creative product 
 
 ## 🌟 Sidebar Navigation Sections
 
-### 1. Snap To It (Product Design & Selling)
+### 1. Snap 2 Fit (Product Design & Selling)
 - **AI Smart Automation**: The native feature that automatically pixelates, sharpens, upscales, and auto-resizes uploaded designs onto any selected object (shirts, mugs, phone cases) simultaneously, eliminating hours of manual, one-by-one entry.
+- **Instant AI Model Try-On Swaps**: Instantly maps and drapes user graphic designs onto hyper-realistic virtual models of diverse body types, shapes, and backgrounds on the spot.
+- **Automated Multi-Channel Resizing**: Intelligently reformats, crops, and processes image assets across perfect aspect ratios for all major video and image feeds (TikTok 9:16, YouTube 16:9, Instagram 1:1) in a single batch layout.
 - **Better-Than-Beacons Hosting**: A fast, integrated link-in-bio storefront landing page featuring a built-in checkout experience.
 - **Universal Multi-Gateway Payments**: Supports full global checkouts using Stripe, PayPal, Apple Pay, Google Pay, and Klarna (BNPL) to maximize sales conversions and mobile checkouts.
 - **Hands-Free Dropshipping**: Automated multi-vendor payment routing that separates manufacturing costs for print suppliers while instantly passing remaining product profit straight to the creator's wallet.
@@ -37,4 +39,3 @@ A protected workspace allowing innovators to connect with people who share simil
 
 ### Database (`/database`)
 - `schema.sql`: Core relational database layout mapping custom subscription limits, signature states, and zone allocation indexes.
-
