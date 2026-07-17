@@ -1,3 +1,12 @@
+Aurora is evolving into an agentic creative partner. Beyond its current commerce and incubation capabilities, the platform is integrating an adaptive backend layer designed to offload technical infrastructure, deployment, and subscription logic, allowing creators to maintain a pure flow state.
+
+🧪 Strategic Roadmap & Agentic Evolution
+Predictive Subscription Framework: Shifting to a seamless, adaptive system that scales with the creator’s usage.
+
+Agentic Backend Integration: Transitioning infrastructure tasks to autonomous agents.
+
+Living Documentation: This repository serves as our documentation layer, evolving dynamically with the platform’s architectural growth.
+
 # Aurora: The Ultimate Smart Creator Selling & Idea Incubator Platform 🚀🌌
 
 Aurora is a unified web and mobile platform designed to bridge creative product commerce with legally secure project incubation. The platform is cleanly split into two primary operational sections accessible directly from the main sidebar navigation.
