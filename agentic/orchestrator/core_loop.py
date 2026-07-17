@@ -1,21 +1,17 @@
 # agentic/orchestrator/core_loop.py
+from .registry import get_tool
+from .self_healing import SelfHealingEngine
 
 class AgenticOrchestrator:
     def __init__(self):
-        self.memory = []  # Placeholder for Context Lake
-        self.tools = []   # Placeholder for available backend functions
+        self.healer = SelfHealingEngine()
 
     def plan(self, goal):
-        """Reason about the next steps to achieve a goal."""
-        print(f"Planning for goal: {goal}")
+        print(f"Orchestrating plan for: {goal}")
 
-    def execute(self, action):
-        """Execute the chosen tool or backend function."""
-        print(f"Executing: {action}")
-
-    def reflect(self, result):
-        """Self-evaluate the outcome and adjust if necessary."""
-        print(f"Reflecting on result: {result}")
-
-# Initialize the engine
-aurora_agent = AgenticOrchestrator()
+    def execute_with_protection(self, task_name):
+        try:
+            tool = get_tool(task_name)
+            # Execute tool logic here
+        except Exception as e:
+            self.healer.handle_error(type(e).__name__, task_name)
