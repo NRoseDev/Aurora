@@ -1,3 +1,19 @@
+# 🧪 CURRENT WORKING TARGET (HIGH PRIORITY)
+
+## 1. System Initialization
+- Locate and initialize the `aurora_init.py` script to ensure correct backend functionality.
+- Commit existing foundational project files, including `room_architecture.py` and current frontend components.
+- Secure the entire codebase layout directly within this GitHub repository environment.
+
+## 2. Snap 2 Fit (Core Commerce Automation Features)
+- AI Smart Automation: Native engine (`ai_resizer.py`) that automatically sharpens, upscales, and resizes uploaded designs onto objects simultaneously.
+- Instant AI Model Try-On Swaps: Automatically maps and drapes graphic designs onto realistic virtual models.
+- Automated Multi-Channel Resizing: Mass-reformats assets into 9:16 (TikTok), 16:9 (YouTube), and 1:1 (Instagram) aspects in a single batch layout.
+- Fast Storefront Hosting: Connect directly to `Storefront.jsx` for link-in-bio storefront landing pages.
+- Universal Payments & Dropshipping: Map routing via `payment_gateway_hub.py` and `fulfillment_engine.py` for direct vendor splits.
+
+---
+
 Aurora is evolving into an agentic creative partner. Beyond its current commerce and incubation capabilities, the platform is integrating an adaptive backend layer designed to offload technical infrastructure, deployment, and subscription logic, allowing creators to maintain a pure flow state.
 
 🧪 Strategic Roadmap & Agentic Evolution
