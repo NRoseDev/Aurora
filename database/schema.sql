@@ -2,9 +2,16 @@ CREATE TABLE users (
     user_id SERIAL PRIMARY KEY, 
     email VARCHAR(255) UNIQUE NOT NULL, 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    -- NEW: Track subscription tier and commission level (5%, 8%, 11%)
     commission_tier_percentage NUMERIC(4,2) DEFAULT 5.00,
-    notification_frequency_slider INT DEFAULT 50 -- Prevent alert flooding (0-100)
+    notification_frequency_slider INT DEFAULT 50, -- Prevent alert flooding (0-100)
+    
+    -- =========================================================================
+    -- UNIVERSAL ACCESSIBILITY MECHANISMS (App-Wide / Every Section)
+    -- =========================================================================
+    input_mode_preference VARCHAR(50) DEFAULT 'standard', -- 'type', 'speak_to_text', 'asl_camera_input', 'external_switch_device'
+    dyslexia_font_enabled BOOLEAN DEFAULT FALSE,         -- Forces dyslexia-friendly typography globally
+    text_to_speech_enabled BOOLEAN DEFAULT FALSE,        -- Screen reader and audio feedback overlay
+    assistive_device_profile VARCHAR(100) DEFAULT NULL   -- Maps hardware keycodes for external external devices
 ); 
 
 CREATE TABLE connected_channels ( 
@@ -50,32 +57,29 @@ CREATE TABLE room_collaborators (
     user_id INT REFERENCES users(user_id) ON DELETE CASCADE, 
     revenue_share_percentage NUMERIC(5,2) NOT NULL, 
     labor_contribution_details TEXT,
-    -- NEW: Track digital legal safety nets
     nda_signed BOOLEAN DEFAULT FALSE,
     nda_signature_date TIMESTAMP
 );
 
 -- =========================================================================
--- NEW ADDITIONS BELOW: Built-in Accounting and Standalone Ecosystem Tracks
+-- Built-in Accounting and Standalone Ecosystem Tracks
 -- =========================================================================
 
--- For Advanced Automated Accounting Spreadsheets
 CREATE TABLE sales_accounting_ledger (
     ledger_id SERIAL PRIMARY KEY,
     user_id INT REFERENCES users(user_id) ON DELETE CASCADE,
     gross_sales NUMERIC(12,2) DEFAULT 0.00,
-    cogs NUMERIC(12,2) DEFAULT 0.00, -- Cost of Goods Sold
-    platform_fee_deducted NUMERIC(12,2) DEFAULT 0.00, -- Based on the 5%/8%/11% tier
+    cogs NUMERIC(12,2) DEFAULT 0.00, 
+    platform_fee_deducted NUMERIC(12,2) DEFAULT 0.00, 
     estimated_sales_tax NUMERIC(12,2) DEFAULT 0.00,
     net_profit NUMERIC(12,2) DEFAULT 0.00,
-    view_period VARCHAR(20) NOT NULL, -- 'weekly', 'monthly', 'quarterly', 'yearly'
+    view_period VARCHAR(20) NOT NULL, 
     recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- For Constellation Workspace Zone Allocations (The Vault, Overflow, IdeaShelf, IdeaBin)
 CREATE TABLE constellation_project_zones (
     zone_allocation_id SERIAL PRIMARY KEY,
     room_id INT REFERENCES incubator_rooms(room_id) ON DELETE CASCADE,
-    zone_state VARCHAR(20) DEFAULT 'vault', -- 'vault', 'overflow', 'ideashelf', 'ideabin'
+    zone_state VARCHAR(20) DEFAULT 'vault', 
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
