@@ -2,16 +2,16 @@ CREATE TABLE users (
     user_id SERIAL PRIMARY KEY, 
     email VARCHAR(255) UNIQUE NOT NULL, 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    commission_tier_percentage NUMERIC(4,2) DEFAULT 5.00,
-    notification_frequency_slider INT DEFAULT 50, -- Prevent alert flooding (0-100)
     
-    -- =========================================================================
-    -- UNIVERSAL ACCESSIBILITY MECHANISMS (App-Wide / Every Section)
-    -- =========================================================================
+    -- SYSTEM AUTOMATION & COMMISSIONS
+    commission_tier_percentage NUMERIC(4,2) DEFAULT 5.00, -- Tiered scaling (5%, 8%, 11%)
+    notification_frequency_slider INT DEFAULT 50,         -- Notification shield frequency
+
+    -- UNIVERSAL ACCESSIBILITY MECHANISMS (App-Wide Toggles)
     input_mode_preference VARCHAR(50) DEFAULT 'standard', -- 'type', 'speak_to_text', 'asl_camera_input', 'external_switch_device'
-    dyslexia_font_enabled BOOLEAN DEFAULT FALSE,         -- Forces dyslexia-friendly typography globally
-    text_to_speech_enabled BOOLEAN DEFAULT FALSE,        -- Screen reader and audio feedback overlay
-    assistive_device_profile VARCHAR(100) DEFAULT NULL   -- Maps hardware keycodes for external external devices
+    dyslexia_font_enabled BOOLEAN DEFAULT FALSE,         -- Universal Dyslexia font toggle
+    text_to_speech_enabled BOOLEAN DEFAULT FALSE,        -- Universal screen reading feedback
+    assistive_device_profile VARCHAR(100) DEFAULT NULL   -- External switch hardware key mapping
 ); 
 
 CREATE TABLE connected_channels ( 
@@ -57,14 +57,17 @@ CREATE TABLE room_collaborators (
     user_id INT REFERENCES users(user_id) ON DELETE CASCADE, 
     revenue_share_percentage NUMERIC(5,2) NOT NULL, 
     labor_contribution_details TEXT,
+    
+    -- DIGITAL LEGAL SAFETY NETS
     nda_signed BOOLEAN DEFAULT FALSE,
     nda_signature_date TIMESTAMP
 );
 
 -- =========================================================================
--- Built-in Accounting and Standalone Ecosystem Tracks
+-- SYSTEM UTILITIES & AREA SEGREGATION
 -- =========================================================================
 
+-- Built-In Interactive Accounting Ledger Grids
 CREATE TABLE sales_accounting_ledger (
     ledger_id SERIAL PRIMARY KEY,
     user_id INT REFERENCES users(user_id) ON DELETE CASCADE,
@@ -73,13 +76,14 @@ CREATE TABLE sales_accounting_ledger (
     platform_fee_deducted NUMERIC(12,2) DEFAULT 0.00, 
     estimated_sales_tax NUMERIC(12,2) DEFAULT 0.00,
     net_profit NUMERIC(12,2) DEFAULT 0.00,
-    view_period VARCHAR(20) NOT NULL, 
+    view_period VARCHAR(20) NOT NULL, -- 'weekly', 'monthly', 'quarterly', 'yearly'
     recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Constellation Studio Ecosystem Active Segregation Tracks
 CREATE TABLE constellation_project_zones (
     zone_allocation_id SERIAL PRIMARY KEY,
     room_id INT REFERENCES incubator_rooms(room_id) ON DELETE CASCADE,
-    zone_state VARCHAR(20) DEFAULT 'vault', 
+    zone_state VARCHAR(20) DEFAULT 'vault', -- 'vault', 'overflow', 'ideashelf', 'ideabin'
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
