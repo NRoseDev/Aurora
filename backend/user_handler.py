@@ -18,7 +18,7 @@ def create_user(email, db_connection):
             RETURNING user_id;
         """
         cursor.execute(query, (email,))
-        # Get the new ID back
+        # Get the new ID back by explicitly extracting the first index of the row tuple
         new_user_id = cursor.fetchone()[0]
         db_connection.commit()
         cursor.close()
