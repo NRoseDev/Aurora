@@ -10,6 +10,7 @@ Aurora is a unified web and mobile platform designed to bridge creative product 
 - **Predictive Subscription Framework:** Shifting to a seamless, adaptive system that scales with the creator’s usage requirements dynamically.
 - **Agentic Backend Integration:** Transitioning heavy infrastructure tasks, deployment pipelines, and subscription logic to autonomous agents.
 - **Living Documentation:** This repository serves as our active documentation layer, evolving dynamically alongside the platform’s architectural growth.
+- **Universal Accessibility Infrastructure:** App-wide framework supporting text typing, speech-to-text conversion, native ASL camera tracking, hardware external switch devices, and an immediate global toggle for Dyslexia-friendly typography.
 
 ---
 
