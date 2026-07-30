@@ -16,7 +16,7 @@ Aurora should:
 
 ## Connected Platforms
 
-Current documentation:
+Current supported integration plans:
 
 - Shopify
 - Etsy
