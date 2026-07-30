@@ -1,59 +1,69 @@
-// Master Application Root uniting the Sidebar Navigation, Snap 2 Fit, and Constellation hubs
+// Master Application Root uniting the Sidebar Navigation, Creator Workspace, Snap 2 Fit, and Constellation hubs
 
-import React, { useState } from 'react';
-import Sidebar from './Sidebar';
-import Dashboard from './Dashboard';
-import Storefront from './Storefront';
-import Pricing from './Pricing';
-import Constellation from './Constellation';
-import Incubator from './Incubator';
-import StoreConnections from './StoreConnections';
+import React, { useState } from "react";
+import Sidebar from "./Sidebar";
+import Dashboard from "./Dashboard";
+import Storefront from "./Storefront";
+import Pricing from "./Pricing";
+import Constellation from "./Constellation";
+import Incubator from "./Incubator";
+import StoreConnections from "./StoreConnections";
+import CreatorWorkspace from "./CreatorWorkspace";
 
 export default function App() {
-  const [currentView, setCurrentView] = useState('dashboard');
+  const [currentView, setCurrentView] = useState("dashboard");
 
   const renderActiveView = () => {
     switch (currentView) {
-      case 'dashboard':
+      case "dashboard":
         return <Dashboard />;
-      case 'storefront':
+
+      case "creator-workspace":
+        return <CreatorWorkspace />;
+
+      case "storefront":
         return <Storefront />;
-      case 'store-connections':
+
+      case "store-connections":
         return <StoreConnections />;
-      case 'pricing':
+
+      case "pricing":
         return <Pricing />;
-      case 'constellation':
+
+      case "constellation":
         return <Constellation />;
-      case 'incubator':
+
+      case "incubator":
         return <Incubator />;
-      case 'studio':
+
+      case "studio":
         return (
-          <div style={{ padding: '40px', fontFamily: 'Arial, sans-serif' }}>
+          <div style={{ padding: "40px", fontFamily: "Arial, sans-serif" }}>
             <h2>🎨 Snap 2 Fit Studio</h2>
-            <p style={{ color: '#64748b' }}>
-              Upload your master asset. The AI will instantly optimize,
-              re-pixelate, and auto-fit your print designs onto all chosen
-              products simultaneously.
+            <p style={{ color: "#64748b" }}>
+              Upload your master asset. AI will optimize, re-pixelate, and
+              auto-fit your designs across products.
             </p>
+
             <div
               style={{
-                padding: '40px',
-                border: '2px dashed #cbd5e1',
-                borderRadius: '12px',
-                textAlign: 'center',
-                background: '#fff',
-                marginTop: '20px',
+                padding: "40px",
+                border: "2px dashed #cbd5e1",
+                borderRadius: "12px",
+                textAlign: "center",
+                background: "#fff",
+                marginTop: "20px",
               }}
             >
               <button
                 style={{
-                  padding: '10px 20px',
-                  backgroundColor: '#3b82f6',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontWeight: 'bold',
+                  padding: "10px 20px",
+                  backgroundColor: "#3b82f6",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                  fontWeight: "bold",
                 }}
               >
                 Upload Master Image
@@ -61,6 +71,7 @@ export default function App() {
             </div>
           </div>
         );
+
       default:
         return <Dashboard />;
     }
@@ -69,16 +80,22 @@ export default function App() {
   return (
     <div
       style={{
-        display: 'flex',
-        minHeight: '100vh',
-        backgroundColor: '#f8fafc',
+        display: "flex",
+        minHeight: "100vh",
+        backgroundColor: "#f8fafc",
       }}
     >
-      {/* Dynamic Navigation Sidebar Link Layer */}
-      <Sidebar currentView={currentView} onViewChange={setCurrentView} />
+      <Sidebar
+        currentView={currentView}
+        onViewChange={setCurrentView}
+      />
 
-      {/* Content Workspace Render Target */}
-      <main style={{ flex: 1, overflowY: 'auto' }}>
+      <main
+        style={{
+          flex: 1,
+          overflowY: "auto",
+        }}
+      >
         {renderActiveView()}
       </main>
     </div>
