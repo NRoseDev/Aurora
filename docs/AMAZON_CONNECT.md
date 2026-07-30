@@ -2,39 +2,59 @@
 
 ## Purpose
 
-This document will define Aurora's Amazon marketplace connection workflow, integration requirements, and creator experience.
+This document defines Aurora's Amazon marketplace connection workflow, integration requirements, and creator experience.
 
-## Integration Goals
+## Creator Goals
 
-Aurora should help creators:
+Aurora should allow creators to:
 
-- Connect an existing Amazon seller account
-- Organize product publishing workflows
-- Understand marketplace requirements
-- Track store progress
-- Reduce technical complexity
+- Connect an existing Amazon Seller account
+- Verify their marketplace connection
+- Organize product listings
+- Monitor connection status
+- Receive guided setup assistance
 
-## Connection Areas
+## Connection Workflow
 
-Potential integration areas:
+1. Creator selects **Connect Amazon**
+2. Aurora redirects to Amazon authentication
+3. Creator authorizes Aurora
+4. Aurora securely stores the connection
+5. Seller account information is verified
+6. Product listings become available for synchronization
 
-- Seller account authentication
-- Product catalog support
-- Listing organization
-- Inventory awareness
-- Marketplace workflow guidance
+## Required Permissions
 
-## Aurora Role
+Aurora may require access to:
 
-Aurora acts as the creator guide and organizer. Amazon manages marketplace operations, while Aurora helps creators navigate the path from idea to available product.
+- Seller account information
+- Product catalog
+- Inventory
+- Orders (future)
+- Analytics (future)
 
-## Future Considerations
+## Aurora Responsibilities
 
-- Amazon Seller API integration
+Aurora should:
+
+- Guide creators through setup
+- Monitor connection health
+- Display connection status
+- Surface helpful recommendations
+- Never replace Amazon's marketplace functions
+
+## Future Development
+
 - Product synchronization
-- Sales insights
-- Marketplace expansion
+- Inventory synchronization
+- Sales analytics
+- AI-assisted product recommendations
+- Multi-store support
 
 ## Status
 
-Foundation documentation created.
+- Documentation completed
+- Backend implementation pending
+- OAuth implementation pending
+- Amazon Seller API integration pending
+- Creator dashboard integration pending
