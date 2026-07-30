@@ -2,40 +2,59 @@
 
 ## Purpose
 
-This document will define Aurora's Pinterest connection workflow, integration opportunities, and creator experience.
+This document defines Aurora's Pinterest connection workflow, integration opportunities, and creator experience.
 
-## Integration Goals
+## Creator Goals
 
-Aurora should help creators:
+Aurora should allow creators to:
 
-- Connect Pinterest business accounts
+- Connect a Pinterest Business account
+- Verify their account connection
 - Share products and creative content
 - Organize visual marketing workflows
-- Track creator growth opportunities
-- Reduce barriers to using social commerce
+- Receive guided setup assistance
 
-## Connection Areas
+## Connection Workflow
 
-Potential integration areas:
+1. Creator selects **Connect Pinterest**
+2. Aurora redirects to Pinterest authentication
+3. Creator authorizes Aurora
+4. Aurora securely stores the connection
+5. Account information is verified
+6. Product catalogs and content become available for synchronization
 
-- Account authentication
-- Product catalog connection
-- Product pin support
-- Content organization
-- Creator analytics awareness
+## Required Permissions
 
-## Aurora Role
+Aurora may require access to:
 
-Aurora acts as the creator guide and organizer. Pinterest supports visual discovery and audience reach, while Aurora helps creators turn ideas into organized, actionable content and products.
+- Business account information
+- Boards
+- Pins
+- Product catalogs
+- Analytics (future)
 
-## Future Considerations
+## Aurora Responsibilities
 
-- Pinterest API integration
+Aurora should:
+
+- Guide creators through setup
+- Monitor connection health
+- Display connection status
+- Surface helpful recommendations
+- Never replace Pinterest's social commerce functions
+
+## Future Development
+
 - Product catalog synchronization
-- Rich pins support
-- Content performance insights
-- Social commerce expansion
+- Rich Pins support
+- Content scheduling
+- Performance analytics
+- AI-assisted marketing recommendations
 
 ## Status
 
-Foundation documentation created.
+- Documentation completed
+- Backend implementation pending
+- OAuth implementation pending
+- Pinterest API integration pending
+- Creator dashboard integration pending
