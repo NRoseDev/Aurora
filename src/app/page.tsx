@@ -4,10 +4,11 @@
 import React, { useState } from 'react';
 import { StoreDashboard } from '@/components/StoreDashboard';
 import { OrdersTab } from '@/components/OrdersTab';
+import { AnalyticsTab } from '@/components/AnalyticsTab';
 import { Navigation } from '@/components/Navigation';
 
 export default function HomePage() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'orders'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'analytics'>('dashboard');
 
   const shopifyConfig = {
     shopDomain: process.env.NEXT_PUBLIC_SHOPIFY_SHOP_DOMAIN || '',
@@ -46,6 +47,14 @@ export default function HomePage() {
 
           {activeTab === 'orders' && (
             <OrdersTab
+              shopifyConfig={shopifyConfig}
+              wooConfig={wooConfig}
+              bigCartelConfig={bigCartelConfig}
+            />
+          )}
+
+          {activeTab === 'analytics' && (
+            <AnalyticsTab
               shopifyConfig={shopifyConfig}
               wooConfig={wooConfig}
               bigCartelConfig={bigCartelConfig}
