@@ -6,9 +6,10 @@ import { StoreDashboard } from '@/components/StoreDashboard';
 import { OrdersTab } from '@/components/OrdersTab';
 import { AnalyticsTab } from '@/components/AnalyticsTab';
 import { Navigation } from '@/components/Navigation';
+import Scrapbook from '@/components/Scrapbook';
 
 export default function HomePage() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'analytics'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'analytics' | 'scrapbook'>('dashboard');
 
   const shopifyConfig = {
     shopDomain: process.env.NEXT_PUBLIC_SHOPIFY_SHOP_DOMAIN || '',
@@ -59,6 +60,10 @@ export default function HomePage() {
               wooConfig={wooConfig}
               bigCartelConfig={bigCartelConfig}
             />
+          )}
+
+          {activeTab === 'scrapbook' && (
+            <Scrapbook />
           )}
         </main>
       </div>
