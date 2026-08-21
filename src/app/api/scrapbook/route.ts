@@ -92,9 +92,7 @@ export async function DELETE(request: Request) {
 
     const originalLength = store.notes.length;
 
-    store.notes = store.notes.filter(
-      (note) => note.id !== id
-    );
+    store.notes = store.notes.filter((note) => note.id !== id);
 
     if (store.notes.length === originalLength) {
       return NextResponse.json(
