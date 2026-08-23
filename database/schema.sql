@@ -89,6 +89,48 @@ CREATE TABLE constellation_project_zones (
 );
 
 -- =========================================================================
+-- AURORA SUBSCRIPTIONS & PRICING
+-- =========================================================================
+
+-- Defines Aurora's subscription tiers and their daily creation allowances.
+-- Creation capacity replenishes daily rather than functioning as a
+-- consumptive credit balance.
+CREATE TABLE subscription_tiers (
+    tier_id SERIAL PRIMARY KEY,
+    tier_key VARCHAR(50) UNIQUE NOT NULL,
+    tier_name VARCHAR(100) NOT NULL,
+    monthly_price NUMERIC(6,2) NOT NULL DEFAULT 0.00,
+    trial_days INT DEFAULT 0,
+    daily_creation_limit INT,
+    includes_creator_side BOOLEAN DEFAULT TRUE,
+    includes_collab_side BOOLEAN DEFAULT FALSE,
+    includes_other_side BOOLEAN DEFAULT FALSE,
+    standard_usage_limits BOOLEAN DEFAULT TRUE,
+    inner_circle_access BOOLEAN DEFAULT FALSE,
+    founding_creator_access BOOLEAN DEFAULT FALSE,
+    description TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- User's active Aurora subscription.
+CREATE TABLE user_subscriptions (
+    subscription_id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(user_id) ON DELETE CASCADE,
+    tier_id INT REFERENCES subscription_tiers(tier_id) ON DELETE RESTRICT,
+    status VARCHAR(30) NOT NULL DEFAULT 'trialing',
+    trial_started_at TIMESTAMP,
+    trial_ends_at TIMESTAMP,
+    started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    current_period_start TIMESTAMP,
+    current_period_end TIMESTAMP,
+    canceled_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CHECK (status IN ('trialing', 'active', 'past_due', 'canceled', 'expired'))
+);
+
+-- =========================================================================
 -- AURORA CREATOR SYSTEMS
 -- =========================================================================
 
@@ -159,6 +201,41 @@ CREATE TABLE inner_circle_connections (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CHECK (connection_status IN ('pending', 'accepted', 'declined', 'blocked')),
     CHECK (requester_user_id <> recipient_user_id)
+);
+
+-- =========================================================================
+-- INNER CIRCLE COMMUNITY & PLATFORM FEEDBACK
+-- =========================================================================
+
+-- Ideas and suggestions submitted by Inner Circle members to help shape Aurora.
+CREATE TABLE inner_circle_feedback (
+    feedback_id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(user_id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    feedback_type VARCHAR(50) DEFAULT 'platform_idea',
+    status VARCHAR(30) DEFAULT 'submitted',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CHECK (feedback_type IN (
+        'platform_idea',
+        'feature_request',
+        'improvement',
+        'bug_report',
+        'collaboration_idea'
+    )),
+    CHECK (status IN ('submitted', 'reviewing', 'planned', 'implemented', 'closed'))
+);
+
+-- Rewards and bonuses for eligible Inner Circle participation.
+CREATE TABLE inner_circle_rewards (
+    reward_id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(user_id) ON DELETE CASCADE,
+    reward_type VARCHAR(50) NOT NULL,
+    reward_description TEXT,
+    reward_value NUMERIC(10,2),
+    awarded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    redeemed_at TIMESTAMP
 );
 
 -- =========================================================================
