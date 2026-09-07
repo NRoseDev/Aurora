@@ -12,7 +12,7 @@ export interface BigCartelProduct {
     name: string;
     permalink: string;
     description: string;
-    status: string; // 'active' | 'sold-out' | 'coming-soon'
+    status: string;
     default_price: string;
     created_at: string;
   };
@@ -43,25 +43,35 @@ export class BigCartelService {
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method: 'GET',
       headers: {
-        'Accept': 'application/vnd.api+json',
-        'Authorization': `Bearer ${this.accessToken}`,
-        'Content-Type': 'application/vnd.api+json',
+        Accept: 'application/vnd.api+json',
+        Authorization: `Bearer ${this.accessToken}`,
       },
     });
 
     if (!response.ok) {
-      throw new Error(`Big Cartel API error: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Big Cartel API error: ${response.status} ${response.statusText}`
+      );
     }
 
     const json = await response.json();
-    return json.data;
+
+    if (!json?.data) {
+      throw new Error('Invalid Big Cartel API response');
+    }
+
+    return json.data as T;
   }
 
   public async fetchProducts(): Promise<BigCartelProduct[]> {
-    return this.apiRequest<BigCartelProduct[]>(`/accounts/${this.accountId}/products`);
+    return this.apiRequest<BigCartelProduct[]>(
+      `/accounts/${this.accountId}/products`
+    );
   }
 
   public async fetchOrders(): Promise<BigCartelOrder[]> {
-    return this.apiRequest<BigCartelOrder[]>(`/accounts/${this.accountId}/orders`);
+    return this.apiRequest<BigCartelOrder[]>(
+      `/accounts/${this.accountId}/orders`
+    );
   }
 }
