@@ -1,3 +1,4 @@
+```ts
 // src/services/shopifyService.ts
 
 export interface ShopifyConfig {
@@ -51,12 +52,17 @@ export class ShopifyService {
   private apiVersion: string;
 
   constructor(config: ShopifyConfig) {
-    this.shopDomain = config.shopDomain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    this.shopDomain = config.shopDomain
+      .replace(/^https?:\/\//, '')
+      .replace(/\/$/, '');
     this.accessToken = config.accessToken;
     this.apiVersion = config.apiVersion || '2026-07';
   }
 
-  private async graphqlRequest<T>(query: string, variables: Record<string, any> = {}): Promise<T> {
+  private async graphqlRequest<T>(
+    query: string,
+    variables: Record<string, unknown> = {}
+  ): Promise<T> {
     const endpoint = `https://${this.shopDomain}/admin/api/${this.apiVersion}/graphql.json`;
 
     const response = await fetch(endpoint, {
@@ -69,19 +75,25 @@ export class ShopifyService {
     });
 
     if (!response.ok) {
-      throw new Error(`Shopify API error: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Shopify API error: ${response.status} ${response.statusText}`
+      );
     }
 
     const json = await response.json();
 
     if (json.errors) {
-      throw new Error(`Shopify GraphQL Error: ${JSON.stringify(json.errors)}`);
+      throw new Error(
+        `Shopify GraphQL Error: ${JSON.stringify(json.errors)}`
+      );
     }
 
     return json.data;
   }
 
-  public async fetchProducts(first: number = 50): Promise<ShopifyProduct[]> {
+  public async fetchProducts(
+    first: number = 50
+  ): Promise<ShopifyProduct[]> {
     const query = `
       query GetProducts($first: Int!) {
         products(first: $first) {
@@ -116,13 +128,17 @@ export class ShopifyService {
     `;
 
     const data = await this.graphqlRequest<{
-      products: { edges: Array<{ node: ShopifyProduct }> };
+      products: {
+        edges: Array<{ node: ShopifyProduct }>;
+      };
     }>(query, { first });
 
     return data.products.edges.map((edge) => edge.node);
   }
 
-  public async fetchOrders(first: number = 50): Promise<ShopifyOrder[]> {
+  public async fetchOrders(
+    first: number = 50
+  ): Promise<ShopifyOrder[]> {
     const query = `
       query GetOrders($first: Int!) {
         orders(first: $first, sortKey: CREATED_AT, reverse: true) {
@@ -146,9 +162,12 @@ export class ShopifyService {
     `;
 
     const data = await this.graphqlRequest<{
-      orders: { edges: Array<{ node: ShopifyOrder }> };
+      orders: {
+        edges: Array<{ node: ShopifyOrder }>;
+      };
     }>(query, { first });
 
     return data.orders.edges.map((edge) => edge.node);
   }
 }
+```
