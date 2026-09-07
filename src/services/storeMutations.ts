@@ -1,6 +1,5 @@
+```ts
 // src/services/storeMutations.ts
-
-import { UnifiedProduct } from './storeAggregator'; // Assuming your types live here or adjust the import path
 
 interface UpdatePayload {
   price?: number;
@@ -17,20 +16,25 @@ export const updateProductOnPlatform = async (
     case 'shopify': {
       const config = configs.shopify;
       if (!config) throw new Error('Missing Shopify configuration');
-      
-      const response = await fetch(`https://${config.shopDomain}/admin/api/2024-01/products/${productId}.json`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Shopify-Access-Token': config.accessToken,
-        },
-        body: JSON.stringify({
-          product: {
-            id: productId,
-            variants: [{ price: updates.price }]
-          }
-        }),
-      });
+
+      const response = await fetch(
+        `https://${config.shopDomain}/admin/api/2024-01/products/${productId}.json`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Shopify-Access-Token': config.accessToken,
+          },
+          body: JSON.stringify({
+            product: {
+              id: productId,
+              variants: updates.price !== undefined
+                ? [{ price: updates.price }]
+                : undefined,
+            },
+          }),
+        }
+      );
 
       if (!response.ok) throw new Error('Failed to update Shopify product');
       return true;
@@ -39,24 +43,29 @@ export const updateProductOnPlatform = async (
     case 'bigcartel': {
       const config = configs.bigCartel;
       if (!config) throw new Error('Missing Big Cartel configuration');
-      
-      const response = await fetch(`https://api.bigcartel.com/v1/accounts/${config.accountId}/products/${productId}`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${config.accessToken}`,
-          'Content-Type': 'application/vnd.api+json',
-        },
-        body: JSON.stringify({
-          data: {
-            id: productId,
-            type: 'products',
-            attributes: {
-              price: updates.price,
-              stock: updates.inventory
-            }
-          }
-        }),
-      });
+
+      const response = await fetch(
+        `https://api.bigcartel.com/v1/accounts/${config.accountId}/products/${productId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            Authorization: `Bearer ${config.accessToken}`,
+            'Content-Type': 'application/vnd.api+json',
+          },
+          body: JSON.stringify({
+            data: {
+              id: productId,
+              type: 'products',
+              attributes: {
+                ...(updates.price !== undefined && { price: updates.price }),
+                ...(updates.inventory !== undefined && {
+                  stock: updates.inventory,
+                }),
+              },
+            },
+          }),
+        }
+      );
 
       if (!response.ok) throw new Error('Failed to update Big Cartel product');
       return true;
@@ -65,26 +74,39 @@ export const updateProductOnPlatform = async (
     case 'woocommerce': {
       const config = configs.woo;
       if (!config) throw new Error('Missing WooCommerce configuration');
-      
-      const credentials = btoa(`${config.consumerKey}:${config.consumerSecret}`);
-      const response = await fetch(`${config.siteUrl}/wp-json/wc/v3/products/${productId}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Basic ${credentials}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          regular_price: updates.price?.toString(),
-          stock_quantity: updates.inventory,
-          manage_stock: true
-        }),
-      });
+
+      const credentials = `Basic ${btoa(
+        `${config.consumerKey}:${config.consumerSecret}`
+      )}`;
+
+      const response = await fetch(
+        `${config.siteUrl}/wp-json/wc/v3/products/${productId}`,
+        {
+          method: 'PUT',
+          headers: {
+            Authorization: credentials,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ...(updates.price !== undefined && {
+              regular_price: updates.price.toString(),
+            }),
+            ...(updates.inventory !== undefined && {
+              stock_quantity: updates.inventory,
+              manage_stock: true,
+            }),
+          }),
+        }
+      );
 
       if (!response.ok) throw new Error('Failed to update WooCommerce product');
       return true;
     }
 
     default:
-      throw new Error(`Mutation service not implemented for platform: ${platform}`);
+      throw new Error(
+        `Mutation service not implemented for platform: ${platform}`
+      );
   }
 };
+```
