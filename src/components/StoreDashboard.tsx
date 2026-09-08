@@ -1,5 +1,5 @@
 // src/components/StoreDashboard.tsx
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useStoreAggregator } from '../hooks/useStoreAggregator';
 import { updateProductOnPlatform } from '../services/storeMutations';
 
@@ -7,12 +7,20 @@ interface StoreDashboardProps {
   shopifyConfig?: { shopDomain: string; accessToken: string };
   bigCartelConfig?: { accountId: string; accessToken: string };
   etsyConfig?: { accessToken: string; shopId: string };
-  pinterestConfig?: { accessToken: string };
-  amazonConfig?: { clientId: string; clientSecret: string; refreshToken: string };
+  pinterestConfig?: { accessToken: string; merchantId: string };
+  amazonConfig?: {
+    sellerId: string;
+    mwsAuthToken: string;
+    marketplaceId: string;
+  };
   tiktokConfig?: { accessToken: string; shopId: string };
   walmartConfig?: { clientId: string; clientSecret: string };
   ebayConfig?: { accessToken: string };
-  wooConfig?: { siteUrl: string; consumerKey: string; consumerSecret: string };
+  wooConfig?: {
+    siteUrl: string;
+    consumerKey: string;
+    consumerSecret: string;
+  };
 }
 
 export const StoreDashboard: React.FC<StoreDashboardProps> = ({
@@ -39,54 +47,80 @@ export const StoreDashboard: React.FC<StoreDashboardProps> = ({
   });
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedPlatform, setSelectedPlatform] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<'title' | 'price-asc' | 'price-desc' | 'inventory'>('title');
+  const [selectedPlatform, setSelectedPlatform] = useState('all');
+  const [sortBy, setSortBy] = useState<
+    'title' | 'price-asc' | 'price-desc' | 'inventory'
+  >('title');
 
-  // State for tracking inline editing products
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editPrice, setEditPrice] = useState<string>('');
-  const [editInventory, setEditInventory] = useState<string>('');
-  const [updating, setUpdating] = useState<boolean>(false);
+  const [editPrice, setEditPrice] = useState('');
+  const [editInventory, setEditInventory] = useState('');
+  const [updating, setUpdating] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
-  const configs = useMemo(() => ({
-    shopify: shopifyConfig,
-    bigCartel: bigCartelConfig,
-    etsy: etsyConfig,
-    pinterest: pinterestConfig,
-    amazon: amazonConfig,
-    tiktok: tiktokConfig,
-    walmart: walmartConfig,
-    ebay: ebayConfig,
-    woo: wooConfig,
-  }), [shopifyConfig, bigCartelConfig, etsyConfig, pinterestConfig, amazonConfig, tiktokConfig, walmartConfig, ebayConfig, wooConfig]);
+  const configs = useMemo(
+    () => ({
+      shopify: shopifyConfig,
+      bigCartel: bigCartelConfig,
+      etsy: etsyConfig,
+      pinterest: pinterestConfig,
+      amazon: amazonConfig,
+      tiktok: tiktokConfig,
+      walmart: walmartConfig,
+      ebay: ebayConfig,
+      woo: wooConfig,
+    }),
+    [
+      shopifyConfig,
+      bigCartelConfig,
+      etsyConfig,
+      pinterestConfig,
+      amazonConfig,
+      tiktokConfig,
+      walmartConfig,
+      ebayConfig,
+      wooConfig,
+    ]
+  );
 
   const filteredProducts = useMemo(() => {
-    return products
+    return [...products]
       .filter((item) => {
-        const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesPlatform = selectedPlatform === 'all' || item.platform === selectedPlatform;
-        return matchesSearch && matchesPlatform;
+        const search = searchQuery.toLowerCase();
+
+        return (
+          item.title.toLowerCase().includes(search) &&
+          (selectedPlatform === 'all' ||
+            item.platform === selectedPlatform)
+        );
       })
       .sort((a, b) => {
-        if (sortBy === 'title') return a.title.localeCompare(b.title);
-        if (sortBy === 'price-asc') return a.price - b.price;
-        if (sortBy === 'price-desc') return b.price - a.price;
-        if (sortBy === 'inventory') return b.inventory - a.inventory;
-        return 0;
+        if (sortBy === 'title') {
+          return a.title.localeCompare(b.title);
+        }
+
+        if (sortBy === 'price-asc') {
+          return a.price - b.price;
+        }
+
+        if (sortBy === 'price-desc') {
+          return b.price - a.price;
+        }
+
+        return b.inventory - a.inventory;
       });
   }, [products, searchQuery, selectedPlatform, sortBy]);
 
-  const availablePlatforms = useMemo(() => {
-    const set = new Set(products.map(p => p.platform));
-    return Array.from(set);
-  }, [products]);
+  const availablePlatforms = useMemo(
+    () => Array.from(new Set(products.map((product) => product.platform))),
+    [products]
+  );
 
-  const handleStartEdit = (product: any) => {
+  const handleStartEdit = (product: (typeof products)[number]) => {
     setEditingId(product.id);
-    setEditPrice(product.price.toString());
-    setEditInventory(product.inventory?.toString() || '0');
+    setEditPrice(String(product.price));
+    setEditInventory(String(product.inventory ?? 0));
     setActionError(null);
     setActionSuccess(null);
   };
@@ -97,7 +131,23 @@ export const StoreDashboard: React.FC<StoreDashboardProps> = ({
     setEditInventory('');
   };
 
-  const handleSaveUpdate = async (platform: string, productId: string) => {
+  const handleSaveUpdate = async (
+    platform: string,
+    productId: string
+  ) => {
+    const price = Number.parseFloat(editPrice);
+    const inventory = Number.parseInt(editInventory, 10);
+
+    if (!Number.isFinite(price) || price < 0) {
+      setActionError('Please enter a valid price.');
+      return;
+    }
+
+    if (!Number.isInteger(inventory) || inventory < 0) {
+      setActionError('Please enter a valid inventory quantity.');
+      return;
+    }
+
     setUpdating(true);
     setActionError(null);
     setActionSuccess(null);
@@ -106,20 +156,23 @@ export const StoreDashboard: React.FC<StoreDashboardProps> = ({
       const success = await updateProductOnPlatform(
         platform,
         productId,
-        {
-          price: parseFloat(editPrice),
-          inventory: parseInt(editInventory, 10),
-        },
+        { price, inventory },
         configs
       );
 
       if (success) {
-        setActionSuccess(`Successfully updated product on ${platform}!`);
+        setActionSuccess(
+          `Successfully updated product on ${platform}.`
+        );
         setEditingId(null);
-        refetch(); // Pull fresh data to reflect changes
+        await refetch();
       }
-    } catch (err: any) {
-      setActionError(err.message || 'Failed to update product');
+    } catch (err: unknown) {
+      setActionError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to update product.'
+      );
     } finally {
       setUpdating(false);
     }
@@ -129,18 +182,26 @@ export const StoreDashboard: React.FC<StoreDashboardProps> = ({
     <div className="p-6 bg-slate-900 text-slate-100 min-h-screen rounded-xl border border-slate-800 space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Unified Store Command</h2>
-          <p className="text-sm text-slate-400">Live multi-platform product and inventory pipeline</p>
+          <h2 className="text-2xl font-bold tracking-tight">
+            Unified Store Command
+          </h2>
+          <p className="text-sm text-slate-400">
+            Live multi-platform product and inventory pipeline
+          </p>
         </div>
+
         <div className="flex items-center gap-3">
           <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 text-xs font-medium rounded-full border border-emerald-500/20">
             {products.length} Products Synced
           </span>
+
           <button
-            onClick={refetch}
-            className="px-3 py-1.5 bg-slate-800 border border-slate-700 text-xs font-medium text-slate-200 rounded-lg hover:bg-slate-700 transition"
+            type="button"
+            onClick={() => void refetch()}
+            disabled={loading}
+            className="px-3 py-1.5 bg-slate-800 border border-slate-700 text-xs font-medium text-slate-200 rounded-lg hover:bg-slate-700 transition disabled:opacity-50"
           >
-            Sync Now
+            {loading ? 'Syncing...' : 'Sync Now'}
           </button>
         </div>
       </div>
@@ -162,27 +223,37 @@ export const StoreDashboard: React.FC<StoreDashboardProps> = ({
           type="text"
           placeholder="Search products across stores..."
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={(event) => setSearchQuery(event.target.value)}
           className="w-full md:w-80 px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-slate-500"
         />
 
         <div className="flex gap-3 w-full md:w-auto">
           <select
             value={selectedPlatform}
-            onChange={(e) => setSelectedPlatform(e.target.value)}
+            onChange={(event) =>
+              setSelectedPlatform(event.target.value)
+            }
             className="px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-100 focus:outline-none focus:border-slate-500 capitalize"
           >
             <option value="all">All Platforms</option>
-            {availablePlatforms.map((p) => (
-              <option key={p} value={p}>
-                {p}
+            {availablePlatforms.map((platform) => (
+              <option key={platform} value={platform}>
+                {platform}
               </option>
             ))}
           </select>
 
           <select
             value={sortBy}
-            onChange={(e: any) => setSortBy(e.target.value)}
+            onChange={(event) =>
+              setSortBy(
+                event.target.value as
+                  | 'title'
+                  | 'price-asc'
+                  | 'price-desc'
+                  | 'inventory'
+              )
+            }
             className="px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-100 focus:outline-none focus:border-slate-500"
           >
             <option value="title">Sort by Title</option>
@@ -225,45 +296,72 @@ export const StoreDashboard: React.FC<StoreDashboardProps> = ({
                   <span className="text-xs uppercase tracking-wider font-semibold px-2 py-0.5 rounded bg-slate-700 text-slate-300">
                     {product.platform}
                   </span>
-                  <span className="text-xs text-slate-400 font-mono">{product.status}</span>
+
+                  <span className="text-xs text-slate-400 font-mono">
+                    {product.status}
+                  </span>
                 </div>
-                <h3 className="font-medium text-slate-200 line-clamp-2 mb-2">{product.title}</h3>
+
+                <h3 className="font-medium text-slate-200 line-clamp-2 mb-2">
+                  {product.title}
+                </h3>
               </div>
 
               <div className="mt-4 pt-3 border-t border-slate-700/40 space-y-3">
                 {isEditing ? (
                   <div className="space-y-2 bg-slate-900/80 p-3 rounded-lg border border-slate-700">
                     <div className="flex justify-between items-center text-xs text-slate-400">
-                      <span>Edit Price ({product.currency})</span>
+                      <span>
+                        Edit Price ({product.currency})
+                      </span>
+
                       <input
                         type="number"
+                        min="0"
                         step="0.01"
                         value={editPrice}
-                        onChange={(e) => setEditPrice(e.target.value)}
+                        onChange={(event) =>
+                          setEditPrice(event.target.value)
+                        }
                         className="w-24 px-2 py-1 bg-slate-800 border border-slate-600 rounded text-slate-100 text-right"
                       />
                     </div>
+
                     <div className="flex justify-between items-center text-xs text-slate-400">
                       <span>Edit Stock</span>
+
                       <input
                         type="number"
+                        min="0"
+                        step="1"
                         value={editInventory}
-                        onChange={(e) => setEditInventory(e.target.value)}
+                        onChange={(event) =>
+                          setEditInventory(event.target.value)
+                        }
                         className="w-24 px-2 py-1 bg-slate-800 border border-slate-600 rounded text-slate-100 text-right"
                       />
                     </div>
+
                     <div className="flex justify-end gap-2 pt-2">
                       <button
+                        type="button"
                         onClick={handleCancelEdit}
                         disabled={updating}
-                        className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded transition"
+                        className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded transition disabled:opacity-50"
                       >
                         Cancel
                       </button>
+
                       <button
-                        onClick={() => handleSaveUpdate(product.platform, product.id)}
+                        type="button"
+                        onClick={() =>
+                          void handleSaveUpdate(
+                            product.platform,
+                            product.id
+                          )
+                        }
                         disabled={updating}
-                        className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded transition"
+                        className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded transition disabled:opacity-50"
                       >
                         {updating ? 'Saving...' : 'Save & Sync'}
                       </button>
@@ -275,13 +373,20 @@ export const StoreDashboard: React.FC<StoreDashboardProps> = ({
                       <span className="text-lg font-bold text-emerald-400">
                         {product.currency} {product.price.toFixed(2)}
                       </span>
-                      {product.inventory !== undefined && (
-                        <div className={`text-xs ${product.inventory === 0 ? 'text-rose-400 font-medium' : 'text-slate-400'}`}>
-                          Stock: {product.inventory}
-                        </div>
-                      )}
+
+                      <div
+                        className={`text-xs ${
+                          product.inventory === 0
+                            ? 'text-rose-400 font-medium'
+                            : 'text-slate-400'
+                        }`}
+                      >
+                        Stock: {product.inventory}
+                      </div>
                     </div>
+
                     <button
+                      type="button"
                       onClick={() => handleStartEdit(product)}
                       className="px-2.5 py-1 bg-slate-700 hover:bg-slate-600 text-xs text-slate-200 rounded-md transition"
                     >
