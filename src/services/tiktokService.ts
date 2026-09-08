@@ -12,32 +12,50 @@ export class TikTokService {
   }
 
   public async fetchListings(): Promise<UnifiedProduct[]> {
-    const response = await fetch(`https://open-api.tiktokglobalshop.com/product/202309/shops/${this.shopId}/products/search`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ page_size: 50 }),
-    });
+    const response = await fetch(
+      `https://open-api.tiktokglobalshop.com/product/202309/shops/${this.shopId}/products/search`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          page_size: 50,
+        }),
+      }
+    );
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch TikTok products: ${response.statusText}`);
+      throw new Error(
+        `Failed to fetch TikTok products: ${response.status} ${response.statusText}`
+      );
     }
 
     const data = await response.json();
-    return this.normalize(data.data?.products || []);
+
+    if (!Array.isArray(data?.data?.products)) {
+      return [];
+    }
+
+    return this.normalize(data.data.products);
   }
 
   private normalize(items: any[]): UnifiedProduct[] {
-    return items.map((item) => ({
-      id: `tiktok-${item.id}`,
-      platform: 'tiktok',
-      title: item.name,
-      price: parseFloat(item.skus?.[0]?.price?.original_price || 0),
-      currency: item.skus?.[0]?.price?.currency || 'USD',
-      inventory: item.skus?.[0]?.inventory?.[0]?.quantity || 0,
-      status: item.status,
-    }));
+    return items.map((item) => {
+      const sku = item.skus?.[0];
+      const price = sku?.price?.original_price;
+
+      return {
+        id: `tiktok-${item.id}`,
+        platform: 'tiktok',
+        title: item.name || 'Untitled',
+        price: Number.parseFloat(String(price ?? 0)) || 0,
+        currency: sku?.price?.currency || 'USD',
+        inventory: Number(sku?.inventory?.[0]?.quantity ?? 0),
+        status: item.status || 'ACTIVE',
+      };
+    });
   }
 }
