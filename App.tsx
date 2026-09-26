@@ -1,50 +1,40 @@
 import { useState } from 'react';
-import { Layout } from './components/Layout';
-import { Dashboard } from './pages/Dashboard';
-import { Studio } from './pages/Studio';
-import { Products } from './pages/Products';
-import { Orders } from './pages/Orders';
-import { Store } from './pages/Store';
-import { Pricing } from './pages/Pricing';
-import { Security } from './pages/Security';
-import { Constellation } from './pages/Constellation';
-import { LegalHub } from './pages/LegalHub';
-import { Community } from './pages/Community';
-import type { Page, SubscriptionTier } from './types';
+import { Navigation } from './src/components/Navigation';
+import { StoreDashboard } from './src/components/StoreDashboard';
+import { OrdersTab } from './src/components/OrdersTab';
+import Scrapbook from './src/components/Scrapbook';
+
+type Page = 'dashboard' | 'orders' | 'analytics' | 'scrapbook';
 
 function App() {
   const [page, setPage] = useState<Page>('dashboard');
-  const [tier, setTier] = useState<SubscriptionTier>('free');
-  const [language, setLanguage] = useState('en');
-
-  const navigate = (p: Page) => setPage(p);
-
-  const renderPage = () => {
-    switch (page) {
-      case 'dashboard': return <Dashboard tier={tier} onNavigate={navigate} />;
-      case 'studio': return <Studio tier={tier} onNavigate={navigate} />;
-      case 'products': return <Products onNavigate={navigate} />;
-      case 'orders': return <Orders />;
-      case 'store': return <Store tier={tier} onNavigate={navigate} />;
-      case 'pricing': return <Pricing currentTier={tier} onUpgrade={setTier} />;
-      case 'security': return <Security />;
-      case 'constellation': return <Constellation />;
-      case 'legal': return <LegalHub />;
-      case 'community': return <Community />;
-      default: return <Dashboard tier={tier} onNavigate={navigate} />;
-    }
-  };
 
   return (
-    <Layout
-      currentPage={page}
-      onNavigate={navigate}
-      tier={tier}
-      language={language}
-      onLanguageChange={setLanguage}
-    >
-      {renderPage()}
-    </Layout>
+    <div className="min-h-screen bg-slate-950 p-6 text-slate-100">
+      <div className="mx-auto max-w-7xl">
+        <header className="mb-6">
+          <h1 className="text-3xl font-extrabold tracking-tight text-white">
+            Aurora Unified Command
+          </h1>
+          <p className="text-sm text-slate-400">
+            Multi-platform creator management system
+          </p>
+        </header>
+
+        <Navigation activeTab={page} setActiveTab={setPage} />
+
+        <main>
+          {page === 'dashboard' && <StoreDashboard />}
+          {page === 'orders' && <OrdersTab />}
+          {page === 'scrapbook' && <Scrapbook />}
+          {page === 'analytics' && (
+            <div className="p-6 text-slate-400">
+              Analytics coming online.
+            </div>
+          )}
+        </main>
+      </div>
+    </div>
   );
 }
 
