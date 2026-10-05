@@ -3,8 +3,9 @@ import { Navigation } from './src/components/Navigation';
 import { StoreDashboard } from './src/components/StoreDashboard';
 import { OrdersTab } from './src/components/OrdersTab';
 import Scrapbook from './src/components/Scrapbook';
+import Snap2Fit from './src/components/Snap2Fit';
 
-type Page = 'dashboard' | 'orders' | 'analytics' | 'scrapbook';
+type Page = 'dashboard' | 'orders' | 'analytics' | 'scrapbook' | 'snap2fit';
 
 function App() {
   const [page, setPage] = useState<Page>('dashboard');
@@ -27,6 +28,7 @@ function App() {
           {page === 'dashboard' && <StoreDashboard />}
           {page === 'orders' && <OrdersTab />}
           {page === 'scrapbook' && <Scrapbook />}
+          {page === 'snap2fit' && <Snap2Fit />}
           {page === 'analytics' && (
             <div className="p-6 text-slate-400">
               Analytics coming online.

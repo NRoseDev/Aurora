@@ -1,4 +1,4 @@
-export type Page = 'dashboard' | 'orders' | 'analytics' | 'scrapbook';
+export type Page = 'dashboard' | 'orders' | 'analytics' | 'scrapbook' | 'snap2fit';
 
 export type SubscriptionTier = 'free' | 'creator' | 'pro' | 'enterprise';
 
