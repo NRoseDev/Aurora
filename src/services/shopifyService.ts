@@ -1,4 +1,3 @@
-```ts
 // src/services/shopifyService.ts
 
 export interface ShopifyConfig {
@@ -170,4 +169,3 @@ export class ShopifyService {
     return data.orders.edges.map((edge) => edge.node);
   }
 }
-```

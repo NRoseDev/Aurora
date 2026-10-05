@@ -1,4 +1,3 @@
-```typescript
 // src/services/scrapbookService.ts
 
 export type ScrapbookWorkStatus =
@@ -496,4 +495,3 @@ export async function clearScrapbookWorkspace(): Promise<void> {
 
   await writeWorkspace(workspace);
 }
-```

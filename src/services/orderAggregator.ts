@@ -1,4 +1,3 @@
-```ts
 // src/services/orderAggregator.ts
 
 export interface UnifiedOrder {
@@ -127,4 +126,3 @@ export const fetchAllOrders = async (
         new Date(a.createdAt).getTime()
     );
 };
-```

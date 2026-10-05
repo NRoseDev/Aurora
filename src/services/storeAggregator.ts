@@ -1,4 +1,3 @@
-```ts
 // src/services/storeAggregator.ts
 
 import { UnifiedProduct } from '../types';
@@ -89,4 +88,3 @@ export async function fetchAllProducts(
   const aggregator = new StoreAggregator(configs);
   return aggregator.fetchAllProducts();
 }
-```

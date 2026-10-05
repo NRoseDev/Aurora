@@ -1,4 +1,3 @@
-```ts
 // src/services/storeMutations.ts
 
 interface UpdatePayload {
@@ -109,4 +108,3 @@ export const updateProductOnPlatform = async (
       );
   }
 };
-```
