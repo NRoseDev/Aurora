@@ -286,6 +286,49 @@ export default function Snap2Fit() {
 
   const isUpscaling = image ? product.width > image.width || product.height > image.height : false;
 
+  // ---- The Guide -------------------------------------------------------
+  // Real guidance from the picture's real measurements. No guessing:
+  // how much of the needed size the picture already has, whether its
+  // shape matches the item, and which items it would print best on.
+  const guide = useMemo(() => {
+    if (!image) return null;
+    const sizeRatio = Math.min(image.width / product.width, image.height / product.height);
+    const sizePercent = Math.round(sizeRatio * 100);
+    let quality: string;
+    let advice: string;
+    if (sizeRatio >= 1) {
+      quality = 'Great for print';
+      advice = 'Your picture already has enough pixels for this item. Repixelate can stay gentle, or off.';
+    } else if (sizeRatio >= 0.5) {
+      quality = 'Good, with a clean-up';
+      advice = 'Your picture is a bit small for this item. Repixelate on Gentle is the right choice.';
+    } else {
+      quality = 'Small for this item';
+      advice = 'Your picture is much smaller than this item needs. Use Repixelate on Strong — or pick a smaller item below, where it will print sharper.';
+    }
+    const shapeRatio = image.width / image.height;
+    const itemRatio = product.width / product.height;
+    const shapeDiff = Math.abs(shapeRatio - itemRatio) / itemRatio;
+    const shapeAdvice =
+      shapeDiff <= 0.15
+        ? 'Your picture’s shape closely matches this item, so either fitting choice will look good.'
+        : fitMode === 'fit'
+          ? 'Your picture’s shape is different from this item’s. “Fit the whole design in” will leave some empty space — that is normal, nothing will be cut off.'
+          : 'Your picture’s shape is different from this item’s. “Fill the whole item” will trim some edges away.';
+    const bestItems = [...PRODUCTS]
+      .map((p) => ({ product: p, ratio: Math.min(image.width / p.width, image.height / p.height) }))
+      .sort((a, b) => b.ratio - a.ratio)
+      .slice(0, 3);
+    return { sizePercent, quality, advice, shapeAdvice, bestItems };
+  }, [image, product, fitMode]);
+
+  const applyOption = (mode: 'fit' | 'fill', clean: boolean, level: 'gentle' | 'strong') => {
+    setFitMode(mode);
+    setRepixelate(clean);
+    setStrength(level);
+    setResult(null);
+  };
+
   return (
     <div className="p-6 bg-slate-900 text-slate-100 rounded-xl border border-slate-800 space-y-6">
       <div>
@@ -323,6 +366,51 @@ export default function Snap2Fit() {
           </p>
         )}
       </div>
+
+      {/* The Guide — appears after a picture is added */}
+      {image && guide && (
+        <div className="bg-emerald-500/5 p-4 rounded-xl border border-emerald-500/30 space-y-3">
+          <p className="text-sm font-semibold text-emerald-300">Your guide says</p>
+          <p className="text-sm text-slate-200">
+            <strong>{guide.quality}.</strong> For this {product.label}, your picture has about {guide.sizePercent}% of the pixels a perfect print would want.
+          </p>
+          <p className="text-sm text-slate-300">{guide.advice}</p>
+          <p className="text-sm text-slate-300">{guide.shapeAdvice}</p>
+          <div className="space-y-2">
+            <p className="text-xs text-slate-400">This picture would print best on:</p>
+            <div className="flex flex-wrap gap-2">
+              {guide.bestItems.map(({ product: p, ratio }) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => chooseProduct(p.id)}
+                  className="px-3 py-1.5 rounded-lg text-xs border bg-slate-900 border-slate-700 text-slate-200 hover:border-emerald-500/50 transition"
+                >
+                  {p.label} — {Math.round(ratio * 100)}% of perfect size
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-2">
+            <p className="text-xs text-slate-400">Pick a way to make it — the guide set the recommended one up for you:</p>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" onClick={() => applyOption('fit', true, 'gentle')} className="px-3 py-2 rounded-lg text-sm border bg-slate-900 border-slate-700 text-slate-200 hover:border-emerald-500/50 transition">
+                Safe — whole design, gentle clean-up
+              </button>
+              <button type="button" onClick={() => applyOption('fill', true, 'strong')} className="px-3 py-2 rounded-lg text-sm border bg-slate-900 border-slate-700 text-slate-200 hover:border-emerald-500/50 transition">
+                Bold — fill the item, strong clean-up
+              </button>
+              <button type="button" onClick={() => applyOption('fit', false, 'gentle')} className="px-3 py-2 rounded-lg text-sm border bg-slate-900 border-slate-700 text-slate-200 hover:border-emerald-500/50 transition">
+                Exact — whole design, no clean-up
+              </button>
+            </div>
+            <p className="text-xs text-slate-500">
+              Right now you have: {fitMode === 'fit' ? 'fit the whole design in' : 'fill the whole item'} ·{' '}
+              {repixelate ? `repixelate ${strength}` : 'no repixelate'}. You can change any of it below.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* 2. Repixelate */}
       <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-800 space-y-3">
