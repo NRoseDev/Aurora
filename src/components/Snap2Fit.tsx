@@ -185,7 +185,7 @@ async function fitImage(
   return { url, width: measured.width, height: measured.height, sizeBytes: blob.size, productLabel: product.label, repixelated: repixelate };
 }
 
-export default function Snap2Fit() {
+export default function Snap2Fit({ onSendToSizeMeUp }: { onSendToSizeMeUp?: (design: import('../types').SharedDesign) => void } = {}) {
   const [image, setImage] = useState<LoadedImage | null>(null);
   const [productId, setProductId] = useState(PRODUCTS[0].id);
   const [fitMode, setFitMode] = useState<'fit' | 'fill'>('fit');
@@ -287,39 +287,45 @@ export default function Snap2Fit() {
   const isUpscaling = image ? product.width > image.width || product.height > image.height : false;
 
   // ---- The Guide -------------------------------------------------------
-  // Real guidance from the picture's real measurements. No guessing:
-  // how much of the needed size the picture already has, whether its
-  // shape matches the item, and which items it would print best on.
+  // Per the Creator Journey design principle ("Aurora should never
+  // overwhelm the user. One clear next step.") and Nichole's direction:
+  // Snap 2 Fit takes the guesswork OUT. It does NOT grade the user's
+  // picture, and it does NOT show pixel percentages or quality scores.
+  // Instead the guide quietly sets everything up the right way for the
+  // picture and item chosen, and the user just follows the steps.
+  useEffect(() => {
+    if (!image) return;
+    // Work out how much enlarging this picture needs for this item —
+    // internally only, to choose the clean-up level. Never shown.
+    const enlargeFactor = Math.max(product.width / image.width, product.height / image.height);
+    setRepixelate(true);
+    setStrength(enlargeFactor > 1.75 ? 'strong' : 'gentle');
+    setFitMode(product.defaultMode);
+    setResult(null);
+    // Only re-run the automatic setup when the picture or item changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [image, productId]);
+
+  // Shape guidance is about what the user will SEE (empty space, or
+  // edges trimmed), never about grading their picture.
   const guide = useMemo(() => {
     if (!image) return null;
-    const sizeRatio = Math.min(image.width / product.width, image.height / product.height);
-    const sizePercent = Math.round(sizeRatio * 100);
-    let quality: string;
-    let advice: string;
-    if (sizeRatio >= 1) {
-      quality = 'Great for print';
-      advice = 'Your picture already has enough pixels for this item. Repixelate can stay gentle, or off.';
-    } else if (sizeRatio >= 0.5) {
-      quality = 'Good, with a clean-up';
-      advice = 'Your picture is a bit small for this item. Repixelate on Gentle is the right choice.';
-    } else {
-      quality = 'Small for this item';
-      advice = 'Your picture is much smaller than this item needs. Use Repixelate on Strong — or pick a smaller item below, where it will print sharper.';
-    }
     const shapeRatio = image.width / image.height;
     const itemRatio = product.width / product.height;
     const shapeDiff = Math.abs(shapeRatio - itemRatio) / itemRatio;
     const shapeAdvice =
       shapeDiff <= 0.15
-        ? 'Your picture’s shape closely matches this item, so either fitting choice will look good.'
+        ? 'Your design’s shape matches this item well, so it will sit on it nicely.'
         : fitMode === 'fit'
-          ? 'Your picture’s shape is different from this item’s. “Fit the whole design in” will leave some empty space — that is normal, nothing will be cut off.'
-          : 'Your picture’s shape is different from this item’s. “Fill the whole item” will trim some edges away.';
-    const bestItems = [...PRODUCTS]
-      .map((p) => ({ product: p, ratio: Math.min(image.width / p.width, image.height / p.height) }))
-      .sort((a, b) => b.ratio - a.ratio)
-      .slice(0, 3);
-    return { sizePercent, quality, advice, shapeAdvice, bestItems };
+          ? 'Your design will be shown in full. There will be some empty space around it on this item — nothing will be cut off.'
+          : 'This will cover the whole item. Some edges of your design will be trimmed away.';
+    // Items whose SHAPE best matches this design (not a size score).
+    const shapeMatches = [...PRODUCTS]
+      .map((p) => ({ product: p, diff: Math.abs(shapeRatio - p.width / p.height) / (p.width / p.height) }))
+      .sort((a, b) => a.diff - b.diff)
+      .slice(0, 3)
+      .map(({ product: p }) => p);
+    return { shapeAdvice, shapeMatches };
   }, [image, product, fitMode]);
 
   const applyOption = (mode: 'fit' | 'fill', clean: boolean, level: 'gentle' | 'strong') => {
@@ -362,52 +368,49 @@ export default function Snap2Fit() {
           <p className="text-sm text-slate-300">
             <span className="font-medium text-slate-100">{image.name}</span>
             {' — '}your picture is <strong>{image.width} × {image.height}</strong> pixels ({formatBytes(image.sizeBytes)})
-            {isUpscaling && productId && ' — it will need enlarging for this item, which is what Repixelate is for.'}
           </p>
         )}
       </div>
 
-      {/* The Guide — appears after a picture is added */}
+      {/* The Guide — appears after a picture is added. It has already set
+          everything up; the user just follows one clear next step. */}
       {image && guide && (
         <div className="bg-emerald-500/5 p-4 rounded-xl border border-emerald-500/30 space-y-3">
-          <p className="text-sm font-semibold text-emerald-300">Your guide says</p>
+          <p className="text-sm font-semibold text-emerald-300">All set up for you</p>
           <p className="text-sm text-slate-200">
-            <strong>{guide.quality}.</strong> For this {product.label}, your picture has about {guide.sizePercent}% of the pixels a perfect print would want.
+            I’ve set this up for a {product.label}. Your design will be cleaned up as it’s made, and{' '}
+            {fitMode === 'fit' ? 'shown in full — nothing cut off.' : 'will cover the whole item.'}
           </p>
-          <p className="text-sm text-slate-300">{guide.advice}</p>
           <p className="text-sm text-slate-300">{guide.shapeAdvice}</p>
           <div className="space-y-2">
-            <p className="text-xs text-slate-400">This picture would print best on:</p>
+            <p className="text-xs text-slate-400">Your design’s shape also suits these items:</p>
             <div className="flex flex-wrap gap-2">
-              {guide.bestItems.map(({ product: p, ratio }) => (
+              {guide.shapeMatches.map((p) => (
                 <button
                   key={p.id}
                   type="button"
                   onClick={() => chooseProduct(p.id)}
                   className="px-3 py-1.5 rounded-lg text-xs border bg-slate-900 border-slate-700 text-slate-200 hover:border-emerald-500/50 transition"
                 >
-                  {p.label} — {Math.round(ratio * 100)}% of perfect size
+                  {p.label}
                 </button>
               ))}
             </div>
           </div>
           <div className="space-y-2">
-            <p className="text-xs text-slate-400">Pick a way to make it — the guide set the recommended one up for you:</p>
+            <p className="text-xs text-slate-400">Prefer it a different way? Tap one — what changes is only what you’ll see:</p>
             <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={() => applyOption('fit', true, 'gentle')} className="px-3 py-2 rounded-lg text-sm border bg-slate-900 border-slate-700 text-slate-200 hover:border-emerald-500/50 transition">
-                Safe — whole design, gentle clean-up
+              <button type="button" onClick={() => applyOption('fit', true, strength)} className="px-3 py-2 rounded-lg text-sm border bg-slate-900 border-slate-700 text-slate-200 hover:border-emerald-500/50 transition">
+                Show my whole design
               </button>
-              <button type="button" onClick={() => applyOption('fill', true, 'strong')} className="px-3 py-2 rounded-lg text-sm border bg-slate-900 border-slate-700 text-slate-200 hover:border-emerald-500/50 transition">
-                Bold — fill the item, strong clean-up
+              <button type="button" onClick={() => applyOption('fill', true, strength)} className="px-3 py-2 rounded-lg text-sm border bg-slate-900 border-slate-700 text-slate-200 hover:border-emerald-500/50 transition">
+                Cover the whole item
               </button>
               <button type="button" onClick={() => applyOption('fit', false, 'gentle')} className="px-3 py-2 rounded-lg text-sm border bg-slate-900 border-slate-700 text-slate-200 hover:border-emerald-500/50 transition">
-                Exact — whole design, no clean-up
+                Keep my picture exactly as it is
               </button>
             </div>
-            <p className="text-xs text-slate-500">
-              Right now you have: {fitMode === 'fit' ? 'fit the whole design in' : 'fill the whole item'} ·{' '}
-              {repixelate ? `repixelate ${strength}` : 'no repixelate'}. You can change any of it below.
-            </p>
+            <p className="text-xs text-slate-500">Your next step is below: pick the item if you want a different one, then press the Make button. Everything else is already handled.</p>
           </div>
         </div>
       )}
@@ -569,6 +572,23 @@ export default function Snap2Fit() {
           >
             Download the finished picture
           </a>
+          {onSendToSizeMeUp && (
+            <button
+              type="button"
+              onClick={() =>
+                onSendToSizeMeUp({
+                  url: result.url,
+                  name: image.name,
+                  width: result.width,
+                  height: result.height,
+                  productLabel: result.productLabel,
+                })
+              }
+              className="inline-block ml-3 px-4 py-2 bg-slate-100 text-slate-900 text-sm font-semibold rounded-lg hover:bg-white transition"
+            >
+              Next step: see it on a model in Size Me Up →
+            </button>
+          )}
         </div>
       )}
     </div>
