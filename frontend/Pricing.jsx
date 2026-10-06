@@ -13,6 +13,9 @@ export default function Pricing() {
       description: 'Explore Aurora and discover what you can create.',
       features: [
         '33-day free access',
+        'Keep all of your profit up to $333 in your free days',
+        'After $333, a small 3% fee — only on profit above $333',
+        'After your free days, paid tiers based on your usage and sales',
         'Daily creation allowance',
         'Return unused creation capacity when creations are rejected',
         'Explore Aurora creator tools'

@@ -95,12 +95,23 @@ CREATE TABLE constellation_project_zones (
 -- Defines Aurora's subscription tiers and their daily creation allowances.
 -- Creation capacity replenishes daily rather than functioning as a
 -- consumptive credit balance.
+--
+-- NICHOLE'S MONEY RULE (2026-10-05), enforced in
+-- backend/fulfillment_engine.py:
+-- * Free period is 33 days. In the free days a user keeps ALL of
+--   their profit up to $333.00 (free_profit_threshold).
+-- * Profit above $333 in the free days is charged 3.00%
+--   (trial_fee_percentage), and only on the part above $333.
+-- * After the free 33 days users move to paid tiers based on their
+--   usage and sales (the tiers in this table).
 CREATE TABLE subscription_tiers (
     tier_id SERIAL PRIMARY KEY,
     tier_key VARCHAR(50) UNIQUE NOT NULL,
     tier_name VARCHAR(100) NOT NULL,
     monthly_price NUMERIC(6,2) NOT NULL DEFAULT 0.00,
     trial_days INT DEFAULT 0,
+    free_profit_threshold NUMERIC(8,2) NOT NULL DEFAULT 333.00,
+    trial_fee_percentage NUMERIC(4,2) NOT NULL DEFAULT 3.00,
     daily_creation_limit INT,
     includes_creator_side BOOLEAN DEFAULT TRUE,
     includes_collab_side BOOLEAN DEFAULT FALSE,
