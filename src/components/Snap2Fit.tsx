@@ -130,6 +130,98 @@ function sharpenCanvas(canvas: HTMLCanvasElement, amount: number): void {
   ctx.putImageData(imageData, 0, 0);
 }
 
+// BACKGROUND REMOVAL, honestly scoped: this takes out a PLAIN
+// background — one colour, like the white behind a logo. It starts
+// from the edges of the picture and works inward while the colour
+// stays close to the corner colour, so the same colour inside the
+// design is left alone. It cannot separate a design from a busy
+// photograph background; no honest claim is made that it can.
+function removeBackgroundCanvas(source: HTMLImageElement, tolerance = 46): HTMLCanvasElement {
+  const width = source.naturalWidth;
+  const height = source.naturalHeight;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Your browser could not create a picture canvas.');
+  ctx.drawImage(source, 0, 0);
+  if (width < 2 || height < 2) return canvas;
+  const imageData = ctx.getImageData(0, 0, width, height);
+  const data = imageData.data;
+
+  // The background colour: the average of small patches in the corners.
+  let br = 0, bg = 0, bb = 0, count = 0;
+  const patch = Math.min(6, Math.floor(Math.min(width, height) / 2));
+  const corners: Array<[number, number]> = [[0, 0], [width - patch, 0], [0, height - patch], [width - patch, height - patch]];
+  for (const [cx, cy] of corners) {
+    for (let y = cy; y < cy + patch; y++) {
+      for (let x = cx; x < cx + patch; x++) {
+        const i = (y * width + x) * 4;
+        br += data[i]; bg += data[i + 1]; bb += data[i + 2]; count++;
+      }
+    }
+  }
+  br /= count; bg /= count; bb /= count;
+
+  const distAt = (idx: number): number => {
+    const i = idx * 4;
+    const dr = data[i] - br;
+    const dg = data[i + 1] - bg;
+    const db = data[i + 2] - bb;
+    return Math.sqrt(dr * dr + dg * dg + db * db);
+  };
+
+  // Flood from every edge pixel, through pixels close to the
+  // background colour. Anything the flood cannot reach stays.
+  const total = width * height;
+  const removed = new Uint8Array(total);
+  const stack: number[] = [];
+  const tryPush = (idx: number) => {
+    if (!removed[idx] && distAt(idx) <= tolerance) {
+      removed[idx] = 1;
+      stack.push(idx);
+    }
+  };
+  for (let x = 0; x < width; x++) {
+    tryPush(x);
+    tryPush((height - 1) * width + x);
+  }
+  for (let y = 0; y < height; y++) {
+    tryPush(y * width);
+    tryPush(y * width + width - 1);
+  }
+  const edgePixels = new Set<number>();
+  while (stack.length > 0) {
+    const idx = stack.pop() as number;
+    const x = idx % width;
+    const y = (idx - x) / width;
+    const neighbours: number[] = [];
+    if (x > 0) neighbours.push(idx - 1);
+    if (x < width - 1) neighbours.push(idx + 1);
+    if (y > 0) neighbours.push(idx - width);
+    if (y < height - 1) neighbours.push(idx + width);
+    for (const n of neighbours) {
+      if (removed[n]) continue;
+      if (distAt(n) <= tolerance) {
+        removed[n] = 1;
+        stack.push(n);
+      } else {
+        edgePixels.add(n);
+      }
+    }
+  }
+  for (let idx = 0; idx < total; idx++) {
+    if (removed[idx]) data[idx * 4 + 3] = 0;
+  }
+  // Soften the cut edge a touch: design pixels right at the boundary
+  // that are still close-ish to the background colour go half-clear.
+  edgePixels.forEach((idx) => {
+    if (distAt(idx) <= tolerance * 1.7) data[idx * 4 + 3] = Math.min(data[idx * 4 + 3], 110);
+  });
+  ctx.putImageData(imageData, 0, 0);
+  return canvas;
+}
+
 async function fitImage(
   image: LoadedImage,
   product: ProductSpec,
@@ -252,6 +344,12 @@ export default function Snap2Fit({ onSendToSizeMeUp }: { onSendToSizeMeUp?: (des
   const [fitMode, setFitMode] = useState<'fit' | 'fill'>('fit');
   const [repixelate, setRepixelate] = useState(true);
   const [strength, setStrength] = useState<'gentle' | 'strong'>('gentle');
+  const [removeBg, setRemoveBg] = useState(false);
+  // The design with its plain background taken out (when that is on).
+  // Everything downstream uses this version, so the fitting, the shop
+  // previews and the full-size makes all show the same clean design.
+  const [designSource, setDesignSource] = useState<LoadedImage | null>(null);
+  const [bgWorking, setBgWorking] = useState(false);
   const [customName, setCustomName] = useState('My item');
   const [customWidthIn, setCustomWidthIn] = useState('10');
   const [customHeightIn, setCustomHeightIn] = useState('8');
@@ -306,6 +404,52 @@ export default function Snap2Fit({ onSendToSizeMeUp }: { onSendToSizeMeUp?: (des
     };
   }, [result]);
 
+  // Keep the "design we actually use" in step with the background
+  // choice. Turning it off goes straight back to the original picture.
+  useEffect(() => {
+    if (!image) {
+      setDesignSource(null);
+      return;
+    }
+    if (!removeBg) {
+      setDesignSource(image);
+      return;
+    }
+    let cancelled = false;
+    setBgWorking(true);
+    // Let the "working" note paint before the pixel work starts.
+    const timer = setTimeout(() => {
+      void (async () => {
+        try {
+          const canvas = removeBackgroundCanvas(image.element);
+          const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+          if (!blob || cancelled) return;
+          const url = URL.createObjectURL(blob);
+          const measured = await measureImage(url);
+          if (cancelled) {
+            URL.revokeObjectURL(url);
+            return;
+          }
+          setDesignSource({ ...image, url, element: measured.element, sizeBytes: blob.size });
+          setResult(null);
+        } catch {
+          if (!cancelled) {
+            setError('The background could not be taken out of this picture. Your original is unchanged.');
+            setRemoveBg(false);
+          }
+        } finally {
+          if (!cancelled) setBgWorking(false);
+        }
+      })();
+    }, 30);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [image, removeBg]);
+
+  const effectiveImage = designSource ?? image;
+
   const chooseProduct = (id: string) => {
     setProductId(id);
     setResult(null);
@@ -343,7 +487,7 @@ export default function Snap2Fit({ onSendToSizeMeUp }: { onSendToSizeMeUp?: (des
     try {
       // Let the "Fitting..." message paint before the heavy pixel work starts.
       await new Promise((resolve) => setTimeout(resolve, 30));
-      const fitted = await fitImage(image, product, fitMode, repixelate, strength);
+      const fitted = await fitImage(effectiveImage ?? image, product, fitMode, repixelate, strength);
       setResult(fitted);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong fitting your picture.');
@@ -360,7 +504,7 @@ export default function Snap2Fit({ onSendToSizeMeUp }: { onSendToSizeMeUp?: (des
       await new Promise((resolve) => setTimeout(resolve, 30));
       const next: Record<string, string> = {};
       for (const p of PRODUCTS) {
-        next[p.id] = await previewForProduct(image, p);
+        next[p.id] = await previewForProduct(effectiveImage ?? image, p);
       }
       setPreviews(next);
       setMadeItems([]);
@@ -396,7 +540,7 @@ export default function Snap2Fit({ onSendToSizeMeUp }: { onSendToSizeMeUp?: (des
       for (const p of pickedProducts) {
         setMakingPicked(p.label);
         await new Promise((resolve) => setTimeout(resolve, 30));
-        const fitted = await fitImage(image, p, p.defaultMode, repixelate, strength);
+        const fitted = await fitImage(effectiveImage ?? image, p, p.defaultMode, repixelate, strength);
         made.push({ ...fitted, productId: p.id, price: prices[p.id] ?? '' });
         setMadeItems([...made]);
       }
@@ -566,6 +710,27 @@ export default function Snap2Fit({ onSendToSizeMeUp }: { onSendToSizeMeUp?: (des
         <p className="text-xs text-slate-400">
           Honest note: this sharpens edges and adds a little contrast and colour. It cannot invent detail that was never in the picture — no honest tool can.
         </p>
+        <div className="pt-2 border-t border-slate-700/60 space-y-2">
+          <label className="flex items-center gap-2 text-sm text-slate-200">
+            <input type="checkbox" checked={removeBg} onChange={(event) => setRemoveBg(event.target.checked)} className="h-4 w-4" />
+            Take the background out
+          </label>
+          <p className="text-xs text-slate-400">
+            This takes out a <strong>plain background</strong> — one colour, like the white behind a logo — so your design itself can sit on any colour item. It works from the edges inward, so the same colour inside your design is left alone. A busy photo background can't be separated this way.
+          </p>
+          {removeBg && bgWorking && <p className="text-xs text-emerald-300">Taking the background out…</p>}
+          {removeBg && !bgWorking && designSource && image && designSource !== image && (
+            <div className="flex items-center gap-3">
+              <img
+                src={designSource.url}
+                alt="Your design with the background taken out"
+                className="h-24 w-auto rounded border border-slate-700"
+                style={{ backgroundImage: 'conic-gradient(#475569 0 25%, #1e293b 0 50%, #475569 0 75%, #1e293b 0)', backgroundSize: '16px 16px' }}
+              />
+              <p className="text-xs text-slate-400">Here it is on the checkerboard — the squares show where it is now see-through. Everything below uses this clean version.</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* 3. Any item */}
@@ -658,7 +823,7 @@ export default function Snap2Fit({ onSendToSizeMeUp }: { onSendToSizeMeUp?: (des
         <p className="text-sm font-semibold text-slate-200">4. Fit it</p>
         <button
           type="button"
-          disabled={!image || working}
+          disabled={!image || working || bgWorking}
           onClick={() => void handleFit()}
           className="px-4 py-2 bg-slate-100 text-slate-900 text-sm font-semibold rounded-lg hover:bg-white transition disabled:opacity-40"
         >

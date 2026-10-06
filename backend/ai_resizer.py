@@ -86,13 +86,90 @@ class AIResizer:
     def __init__(self):
         pass
 
-    def clear_background(self, image_bytes):
-        """NOT implemented. This used to pretend to remove the background
-        and return the picture unchanged. Background removal needs a real
-        segmentation model, which this project does not have yet."""
-        raise NotImplementedError(
-            "Background removal is not implemented yet; it needs a segmentation model."
-        )
+    def clear_background(self, image_bytes, tolerance=46):
+        """Really remove a PLAIN background and return PNG bytes with
+        transparency (Nichole's Snap 2 Fit, 2026-10-06).
+
+        How it works, honestly: the background colour is sampled from
+        the corners, then a flood from the picture's edges removes every
+        connected pixel close to that colour. The same colour INSIDE the
+        design is not touched, because the flood cannot reach it.
+        Edge pixels close to the background colour go half-clear to
+        soften the cut.
+
+        Limit, stated plainly: this separates a design from a plain
+        one-colour background (the white behind a logo is the classic
+        case). It does NOT separate a subject from a busy photograph
+        background — that needs a segmentation model, which remains
+        future work. tolerance is a colour distance in RGB space
+        (0-441); 46 is a gentle default that copes with JPG noise.
+        """
+        img = _load(image_bytes).convert("RGBA")
+        width, height = img.size
+        if width < 2 or height < 2:
+            return _to_png_bytes(img)
+
+        pixels = img.load()
+        # Background colour: average of small patches in the corners.
+        patch = max(1, min(6, min(width, height) // 2))
+        totals = [0, 0, 0]
+        count = 0
+        for cx, cy in ((0, 0), (width - patch, 0), (0, height - patch), (width - patch, height - patch)):
+            for yy in range(cy, cy + patch):
+                for xx in range(cx, cx + patch):
+                    r, g, b, _a = pixels[xx, yy]
+                    totals[0] += r
+                    totals[1] += g
+                    totals[2] += b
+                    count += 1
+        bg = tuple(t / count for t in totals)
+
+        def dist(x, y):
+            r, g, b, _a = pixels[x, y]
+            return ((r - bg[0]) ** 2 + (g - bg[1]) ** 2 + (b - bg[2]) ** 2) ** 0.5
+
+        # Flood from every edge pixel through near-background colour.
+        removed = bytearray(width * height)
+        stack = []
+
+        def try_push(x, y):
+            idx = y * width + x
+            if not removed[idx] and dist(x, y) <= tolerance:
+                removed[idx] = 1
+                stack.append((x, y))
+
+        for x in range(width):
+            try_push(x, 0)
+            try_push(x, height - 1)
+        for y in range(height):
+            try_push(0, y)
+            try_push(width - 1, y)
+
+        edge_pixels = set()
+        while stack:
+            x, y = stack.pop()
+            for nx, ny in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+                if 0 <= nx < width and 0 <= ny < height:
+                    idx = ny * width + nx
+                    if removed[idx]:
+                        continue
+                    if dist(nx, ny) <= tolerance:
+                        removed[idx] = 1
+                        stack.append((nx, ny))
+                    else:
+                        edge_pixels.add((nx, ny))
+
+        for idx in range(width * height):
+            if removed[idx]:
+                x, y = idx % width, idx // width
+                r, g, b, _a = pixels[x, y]
+                pixels[x, y] = (r, g, b, 0)
+        for x, y in edge_pixels:
+            if dist(x, y) <= tolerance * 1.7:
+                r, g, b, a = pixels[x, y]
+                pixels[x, y] = (r, g, b, min(a, 110))
+
+        return _to_png_bytes(img)
 
     def upscale_image(self, image_bytes, target_scale=4, repixelate=True, strength="gentle"):
         """Really enlarge an image by target_scale and (by default) repixelate it.
