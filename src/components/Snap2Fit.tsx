@@ -11,18 +11,19 @@ interface ProductSpec {
   height: number;
   defaultMode: 'fit' | 'fill';
   note: string;
+  category: string;
 }
 
 const PRODUCTS: ProductSpec[] = [
-  { id: 'tshirt', label: 'T-Shirt', width: 2400, height: 3200, defaultMode: 'fit', note: '8" x 10.7" at 300 DPI' },
-  { id: 'hoodie', label: 'Hoodie', width: 2400, height: 3200, defaultMode: 'fit', note: '8" x 10.7" at 300 DPI' },
-  { id: 'mug', label: 'Mug', width: 1200, height: 1000, defaultMode: 'fit', note: '4" x 3.3" at 300 DPI' },
-  { id: 'phone_case', label: 'Phone Case', width: 1400, height: 2900, defaultMode: 'fill', note: '4.7" x 9.7" at 300 DPI' },
-  { id: 'tote', label: 'Tote Bag', width: 3000, height: 3000, defaultMode: 'fit', note: '10" x 10" at 300 DPI' },
-  { id: 'poster', label: 'Poster', width: 3600, height: 5400, defaultMode: 'fit', note: '12" x 18" at 300 DPI' },
-  { id: 'canvas', label: 'Canvas Print', width: 4800, height: 3600, defaultMode: 'fit', note: '16" x 12" at 300 DPI' },
-  { id: 'keychain', label: 'Keychain', width: 1200, height: 1200, defaultMode: 'fit', note: '4" x 4" at 300 DPI' },
-  { id: 'print', label: 'Square Print', width: 2000, height: 2000, defaultMode: 'fit', note: '6.7" x 6.7" at 300 DPI' },
+  { id: 'tshirt', label: 'T-Shirt', width: 2400, height: 3200, defaultMode: 'fit', note: '8" x 10.7" at 300 DPI', category: 'Clothing' },
+  { id: 'hoodie', label: 'Hoodie', width: 2400, height: 3200, defaultMode: 'fit', note: '8" x 10.7" at 300 DPI', category: 'Clothing' },
+  { id: 'mug', label: 'Mug', width: 1200, height: 1000, defaultMode: 'fit', note: '4" x 3.3" at 300 DPI', category: 'Drinkware' },
+  { id: 'phone_case', label: 'Phone Case', width: 1400, height: 2900, defaultMode: 'fill', note: '4.7" x 9.7" at 300 DPI', category: 'Bags & Accessories' },
+  { id: 'tote', label: 'Tote Bag', width: 3000, height: 3000, defaultMode: 'fit', note: '10" x 10" at 300 DPI', category: 'Bags & Accessories' },
+  { id: 'poster', label: 'Poster', width: 3600, height: 5400, defaultMode: 'fit', note: '12" x 18" at 300 DPI', category: 'Prints & Home' },
+  { id: 'canvas', label: 'Canvas Print', width: 4800, height: 3600, defaultMode: 'fit', note: '16" x 12" at 300 DPI', category: 'Prints & Home' },
+  { id: 'keychain', label: 'Keychain', width: 1200, height: 1200, defaultMode: 'fit', note: '4" x 4" at 300 DPI', category: 'Bags & Accessories' },
+  { id: 'print', label: 'Square Print', width: 2000, height: 2000, defaultMode: 'fit', note: '6.7" x 6.7" at 300 DPI', category: 'Prints & Home' },
 ];
 
 const MAX_CUSTOM_PIXELS_PER_SIDE = 6000;
@@ -185,6 +186,66 @@ async function fitImage(
   return { url, width: measured.width, height: measured.height, sizeBytes: blob.size, productLabel: product.label, repixelated: repixelate };
 }
 
+// A small, quick version of the fitting, just so the user can SEE their
+// design on an object. Full-size pictures are only made for the objects
+// the user actually picks.
+async function previewForProduct(image: LoadedImage, product: ProductSpec): Promise<string> {
+  const BOX = 360;
+  const scale = Math.min(BOX / product.width, BOX / product.height);
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(2, Math.round(product.width * scale));
+  canvas.height = Math.max(2, Math.round(product.height * scale));
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Your browser could not create a picture canvas.');
+  ctx.fillStyle = '#e2e8f0';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const sourceRatio = image.width / image.height;
+  const targetRatio = product.width / product.height;
+  let drawWidth: number;
+  let drawHeight: number;
+  if (product.defaultMode === 'fill') {
+    if (sourceRatio > targetRatio) {
+      drawHeight = canvas.height;
+      drawWidth = drawHeight * sourceRatio;
+    } else {
+      drawWidth = canvas.width;
+      drawHeight = drawWidth / sourceRatio;
+    }
+  } else {
+    if (sourceRatio > targetRatio) {
+      drawWidth = canvas.width;
+      drawHeight = drawWidth / sourceRatio;
+    } else {
+      drawHeight = canvas.height;
+      drawWidth = drawHeight * sourceRatio;
+    }
+  }
+  const design = drawSteppedUp(image.element, drawWidth, drawHeight);
+  ctx.drawImage(design, (canvas.width - drawWidth) / 2, (canvas.height - drawHeight) / 2);
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+  if (!blob) throw new Error('A preview could not be created.');
+  return URL.createObjectURL(blob);
+}
+
+const CATEGORIES = ['Clothing', 'Drinkware', 'Bags & Accessories', 'Prints & Home'];
+const STARTING_PRICES: Record<string, string> = {
+  tshirt: '24',
+  hoodie: '39',
+  mug: '14',
+  phone_case: '19',
+  tote: '18',
+  poster: '16',
+  canvas: '49',
+  keychain: '9',
+  print: '12',
+};
+
+interface MadeItem extends FitResult {
+  productId: string;
+  price: string;
+}
+
 export default function Snap2Fit({ onSendToSizeMeUp }: { onSendToSizeMeUp?: (design: import('../types').SharedDesign) => void } = {}) {
   const [image, setImage] = useState<LoadedImage | null>(null);
   const [productId, setProductId] = useState(PRODUCTS[0].id);
@@ -197,6 +258,13 @@ export default function Snap2Fit({ onSendToSizeMeUp }: { onSendToSizeMeUp?: (des
   const [customDpi, setCustomDpi] = useState('300');
   const [result, setResult] = useState<FitResult | null>(null);
   const [working, setWorking] = useState(false);
+  // ---- The shop: this design on every object ----
+  const [previews, setPreviews] = useState<Record<string, string>>({});
+  const [picked, setPicked] = useState<Record<string, boolean>>({});
+  const [prices, setPrices] = useState<Record<string, string>>(STARTING_PRICES);
+  const [showcaseWorking, setShowcaseWorking] = useState(false);
+  const [madeItems, setMadeItems] = useState<MadeItem[]>([]);
+  const [makingPicked, setMakingPicked] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -205,7 +273,7 @@ export default function Snap2Fit({ onSendToSizeMeUp }: { onSendToSizeMeUp?: (des
     const h = Math.round(parseFloat(customHeightIn) * parseFloat(customDpi));
     if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return null;
     if (w > MAX_CUSTOM_PIXELS_PER_SIDE || h > MAX_CUSTOM_PIXELS_PER_SIDE) return null;
-    return { id: 'custom', label: customName.trim() || 'My item', width: w, height: h, defaultMode: 'fit', note: '' };
+    return { id: 'custom', label: customName.trim() || 'My item', width: w, height: h, defaultMode: 'fit', note: '', category: 'Your own item' };
   }, [customName, customWidthIn, customHeightIn, customDpi]);
 
   const customSizeError = useMemo<string | null>(() => {
@@ -223,7 +291,7 @@ export default function Snap2Fit({ onSendToSizeMeUp }: { onSendToSizeMeUp?: (des
 
   const product: ProductSpec =
     productId === 'custom'
-      ? customProduct ?? { id: 'custom', label: 'My item', width: 2000, height: 2000, defaultMode: 'fit', note: '' }
+      ? customProduct ?? { id: 'custom', label: 'My item', width: 2000, height: 2000, defaultMode: 'fit', note: '', category: 'Your own item' }
       : PRODUCTS.find((p) => p.id === productId) ?? PRODUCTS[0];
 
   useEffect(() => {
@@ -281,6 +349,61 @@ export default function Snap2Fit({ onSendToSizeMeUp }: { onSendToSizeMeUp?: (des
       setError(err instanceof Error ? err.message : 'Something went wrong fitting your picture.');
     } finally {
       setWorking(false);
+    }
+  };
+
+  const handleShowEverywhere = async () => {
+    if (!image) return;
+    setShowcaseWorking(true);
+    setError(null);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 30));
+      const next: Record<string, string> = {};
+      for (const p of PRODUCTS) {
+        next[p.id] = await previewForProduct(image, p);
+      }
+      setPreviews(next);
+      setMadeItems([]);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'The previews could not be made.');
+    } finally {
+      setShowcaseWorking(false);
+    }
+  };
+
+  const pickAll = (value: boolean) => {
+    const next: Record<string, boolean> = {};
+    for (const p of PRODUCTS) next[p.id] = value;
+    setPicked(next);
+  };
+
+  const pickCategory = (category: string) => {
+    setPicked((prev) => {
+      const next = { ...prev };
+      for (const p of PRODUCTS) if (p.category === category) next[p.id] = true;
+      return next;
+    });
+  };
+
+  const pickedProducts = PRODUCTS.filter((p) => picked[p.id]);
+  const pickedTotal = pickedProducts.reduce((sum, p) => sum + (parseFloat(prices[p.id]) || 0), 0);
+
+  const handleMakePicked = async () => {
+    if (!image || pickedProducts.length === 0) return;
+    setError(null);
+    const made: MadeItem[] = [];
+    try {
+      for (const p of pickedProducts) {
+        setMakingPicked(p.label);
+        await new Promise((resolve) => setTimeout(resolve, 30));
+        const fitted = await fitImage(image, p, p.defaultMode, repixelate, strength);
+        made.push({ ...fitted, productId: p.id, price: prices[p.id] ?? '' });
+        setMadeItems([...made]);
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'One of the pictures could not be made.');
+    } finally {
+      setMakingPicked(null);
     }
   };
 
@@ -591,6 +714,103 @@ export default function Snap2Fit({ onSendToSizeMeUp }: { onSendToSizeMeUp?: (des
           )}
         </div>
       )}
+
+      {/* 5. On every object in the shop */}
+      <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-800 space-y-4">
+        <p className="text-sm font-semibold text-slate-200">5. See it on every object in the shop</p>
+        <p className="text-xs text-slate-400">
+          One design, every object. Look at them all, tick the ones you want, and set your price for each.
+        </p>
+        <button
+          type="button"
+          disabled={!image || showcaseWorking}
+          onClick={() => void handleShowEverywhere()}
+          className="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-500 transition disabled:opacity-40"
+        >
+          {showcaseWorking ? 'Putting your design on everything…' : 'Show it on every object'}
+        </button>
+        {!image && <p className="text-xs text-slate-500">Add a picture first, then this button will work.</p>}
+
+        {Object.keys(previews).length > 0 && (
+          <>
+            <div className="flex flex-wrap gap-2 items-center">
+              <button type="button" onClick={() => pickAll(true)} className="px-3 py-1.5 rounded-lg text-xs border bg-slate-900 border-slate-700 text-slate-200 hover:border-emerald-500/50 transition">Select all</button>
+              <button type="button" onClick={() => pickAll(false)} className="px-3 py-1.5 rounded-lg text-xs border bg-slate-900 border-slate-700 text-slate-200 hover:border-emerald-500/50 transition">Select none</button>
+              <span className="text-xs text-slate-500">or pick a whole kind:</span>
+              {CATEGORIES.map((cat) => (
+                <button key={cat} type="button" onClick={() => pickCategory(cat)} className="px-3 py-1.5 rounded-lg text-xs border bg-slate-900 border-slate-700 text-slate-200 hover:border-emerald-500/50 transition">
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {PRODUCTS.map((p) => (
+                <div key={p.id} className={`p-3 rounded-xl border space-y-2 ${picked[p.id] ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-slate-700 bg-slate-900'}`}>
+                  <label className="flex items-center gap-2 text-sm font-medium text-slate-100">
+                    <input
+                      type="checkbox"
+                      checked={!!picked[p.id]}
+                      onChange={(event) => setPicked((prev) => ({ ...prev, [p.id]: event.target.checked }))}
+                      className="h-4 w-4"
+                    />
+                    {p.label}
+                  </label>
+                  <img src={previews[p.id]} alt={`Your design on a ${p.label}`} className="w-full h-40 object-contain rounded bg-slate-800" />
+                  <p className="text-[11px] text-slate-500">{p.category} · will be made at {p.width} × {p.height}</p>
+                  <label className="block text-xs text-slate-400">
+                    Your price ($)
+                    <input
+                      value={prices[p.id] ?? ''}
+                      onChange={(event) => setPrices((prev) => ({ ...prev, [p.id]: event.target.value }))}
+                      inputMode="decimal"
+                      className="block mt-1 px-2 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 w-24"
+                    />
+                  </label>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm text-slate-200">
+                {pickedProducts.length === 0
+                  ? 'Nothing ticked yet. Tick the objects you want to sell this design on.'
+                  : `You picked ${pickedProducts.length} object${pickedProducts.length === 1 ? '' : 's'}: ${pickedProducts.map((p) => p.label).join(', ')}. If someone bought one of each, that is $${pickedTotal.toFixed(2)}.`}
+              </p>
+              <button
+                type="button"
+                disabled={pickedProducts.length === 0 || makingPicked !== null}
+                onClick={() => void handleMakePicked()}
+                className="px-4 py-2 bg-slate-100 text-slate-900 text-sm font-semibold rounded-lg hover:bg-white transition disabled:opacity-40"
+              >
+                {makingPicked ? `Making your ${makingPicked}…` : 'Make the ones I picked, full size'}
+              </button>
+            </div>
+
+            {madeItems.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-slate-200">Made, full size and ready:</p>
+                {madeItems.map((item) => (
+                  <div key={item.productId} className="flex flex-wrap items-center gap-3 text-sm text-slate-300">
+                    <img src={item.url} alt="" className="h-10 w-auto rounded bg-white/5" />
+                    <span>
+                      {item.productLabel} — {item.width} × {item.height}
+                      {item.price ? ` · your price $${item.price}` : ''}
+                    </span>
+                    <a
+                      href={item.url}
+                      download={`snap2fit-${item.productId}-${item.width}x${item.height}.png`}
+                      className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-medium rounded-lg hover:bg-emerald-500 transition"
+                    >
+                      Download
+                    </a>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
