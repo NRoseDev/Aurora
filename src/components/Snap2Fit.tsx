@@ -532,6 +532,10 @@ export default function Snap2Fit({ onSendToSizeMeUp }: { onSendToSizeMeUp?: (des
   // ---- The Viewing Rooms: see the fantasy alive ----
   const [fantasyIdx, setFantasyIdx] = useState(0);
   const [fantasyPlaying, setFantasyPlaying] = useState(true);
+  // ---- Your money, upfront: the figures estimator (free-days rule) ----
+  const [estPrice, setEstPrice] = useState('24');
+  const [estCost, setEstCost] = useState('8');
+  const [estKept, setEstKept] = useState('0');
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -711,6 +715,21 @@ export default function Snap2Fit({ onSendToSizeMeUp }: { onSendToSizeMeUp?: (des
 
   const pickedProducts = PRODUCTS.filter((p) => picked[p.id]);
   const pickedTotal = pickedProducts.reduce((sum, p) => sum + (parseFloat(prices[p.id]) || 0), 0);
+
+  // The money estimator uses the exact rule that is in the money code
+  // (backend/fulfillment_engine.py, Nichole's rule): in the free 33 days
+  // the user keeps ALL profit up to $333; above that Aurora takes 3%,
+  // and only on the profit above $333 — never on the making cost.
+  const estNumbers = useMemo(() => {
+    const price = parseFloat(estPrice) || 0;
+    const cost = parseFloat(estCost) || 0;
+    const keptBefore = parseFloat(estKept) || 0;
+    const profit = Math.max(0, price - cost);
+    const roomLeft = Math.max(0, 333 - keptBefore);
+    const above = Math.max(0, profit - roomLeft);
+    const fee = Math.round(above * 0.03 * 100) / 100;
+    return { profit, fee, youKeep: Math.round((profit - fee) * 100) / 100, roomLeft };
+  }, [estPrice, estCost, estKept]);
 
   const handleMakePicked = async () => {
     if (!image || pickedProducts.length === 0) return;
@@ -1155,6 +1174,40 @@ export default function Snap2Fit({ onSendToSizeMeUp }: { onSendToSizeMeUp?: (des
             )}
           </>
         )}
+
+        {/* Your money, upfront — nothing hidden (Nichole's rule) */}
+        <div className="p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5 space-y-3">
+          <p className="text-sm font-semibold text-emerald-200">Your money, upfront — nothing hidden</p>
+          <p className="text-xs text-slate-300">
+            In your <strong>33 free days</strong>, you keep <strong>all</strong> of your profit up to <strong>$333</strong> — for every shop, no matter how big.
+            Past $333, Aurora takes <strong>3%</strong>, and only on the profit <em>above</em> $333 — never on the cost of making your item.
+            What Aurora does take keeps the app running and builds <strong>Rise Up</strong>, the non-profit healing communities.
+            After your free days, your paid tier percentage applies instead.
+          </p>
+          <div className="flex flex-wrap gap-3 items-end">
+            <label className="text-xs text-slate-400">
+              If you sell one for ($)
+              <input value={estPrice} onChange={(e) => setEstPrice(e.target.value)} inputMode="decimal" className="block mt-1 px-2 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 w-24" />
+            </label>
+            <label className="text-xs text-slate-400">
+              And it costs this to make ($)
+              <input value={estCost} onChange={(e) => setEstCost(e.target.value)} inputMode="decimal" className="block mt-1 px-2 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 w-24" />
+            </label>
+            <label className="text-xs text-slate-400">
+              Profit you've already kept in your free days ($)
+              <input value={estKept} onChange={(e) => setEstKept(e.target.value)} inputMode="decimal" className="block mt-1 px-2 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 w-28" />
+            </label>
+          </div>
+          <p className="text-sm text-slate-100">
+            On that sale: your profit is <strong>${estNumbers.profit.toFixed(2)}</strong>. Aurora takes <strong>${estNumbers.fee.toFixed(2)}</strong>. You keep <strong>${estNumbers.youKeep.toFixed(2)}</strong>.
+          </p>
+          <p className="text-[11px] text-slate-400">
+            {estNumbers.fee === 0
+              ? 'No fee — that is the free-days promise: your first $333 of profit is entirely yours.'
+              : `The fee is 3% of just the part of this profit that goes over your $333 (you had $${estNumbers.roomLeft.toFixed(2)} of your $333 still fee-free).`}
+            {' '}These are the same figures the app itself uses when a real sale happens.
+          </p>
+        </div>
       </div>
 
       {/* 6. The Viewing Rooms — see the fantasy alive before you buy */}
