@@ -338,6 +338,172 @@ interface MadeItem extends FitResult {
   price: string;
 }
 
+// ---------------------------------------------------------------------
+// THE VIEWING ROOMS — "See the fantasy alive before you buy."
+// Nichole's feature (2026-10-05): a separate space where the design is
+// shown alive, at any scale, on anything usable — a building, a
+// billboard, a shirt, a blanket, a tapestry, a keychain, a wallet.
+// Each room is a small stage; the design is placed into it the way it
+// would really sit. Rooms change on their own (a gentle tour), and the
+// user can also tap any room to step into it.
+// ---------------------------------------------------------------------
+interface FantasyScene {
+  id: string;
+  room: string;
+  caption: string;
+  backdrop: React.ReactNode;
+  frameStyle: React.CSSProperties;
+  frameClass?: string;
+}
+
+const FANTASY_SCENES: FantasyScene[] = [
+  {
+    id: 'building',
+    room: 'The City',
+    caption: 'Your design, across a whole building.',
+    backdrop: (
+      <>
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg,#1e1b4b 0%,#312e81 55%,#0f172a 100%)' }} />
+        <div className="absolute bottom-0 left-0 right-0 h-10 bg-slate-950/80" />
+        <div className="absolute bottom-10 left-2 w-14 h-24 bg-slate-900/90" />
+        <div className="absolute bottom-10 right-3 w-16 h-32 bg-slate-900/90" />
+        <div className="absolute bottom-10 left-[19%] w-[62%] h-[74%] bg-slate-800 shadow-2xl" />
+      </>
+    ),
+    frameStyle: { left: '21%', top: '14%', width: '58%', height: '58%', transform: 'perspective(700px) rotateY(-4deg)' },
+    frameClass: 'shadow-2xl',
+  },
+  {
+    id: 'billboard',
+    room: 'The Highway',
+    caption: 'Your design, up on a billboard for everyone driving by.',
+    backdrop: (
+      <>
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg,#7dd3fc 0%,#bae6fd 55%,#475569 55.2%,#334155 100%)' }} />
+        <div className="absolute left-1/2 top-[58%] w-3 h-[30%] -translate-x-1/2 bg-slate-600" />
+        <div className="absolute bottom-2 left-6 text-2xl">🚗</div>
+        <div className="absolute bottom-3 right-10 text-xl">🚙</div>
+      </>
+    ),
+    frameStyle: { left: '14%', top: '10%', width: '72%', height: '44%', border: '6px solid #1e293b' },
+    frameClass: 'shadow-2xl',
+  },
+  {
+    id: 'wall',
+    room: 'Your Living Room',
+    caption: 'Your design, framed on the wall above the couch.',
+    backdrop: (
+      <>
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg,#fef3c7 0%,#fde68a 78%,#b45309 78.2%,#92400e 100%)' }} />
+        <div className="absolute bottom-[16%] left-1/2 -translate-x-1/2 w-[62%] h-[20%] rounded-t-2xl bg-rose-800/90" />
+        <div className="absolute bottom-[10%] left-1/2 -translate-x-1/2 w-[70%] h-[10%] rounded-xl bg-rose-900" />
+      </>
+    ),
+    frameStyle: { left: '33%', top: '10%', width: '34%', height: '44%', border: '8px solid #78350f' },
+    frameClass: 'shadow-xl',
+  },
+  {
+    id: 'body',
+    room: 'On You',
+    caption: 'Your design, worn — right there on the shirt.',
+    backdrop: (
+      <>
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg,#fce7f3 0%,#fbcfe8 100%)' }} />
+        <svg viewBox="0 0 200 190" className="absolute left-1/2 top-[6%] h-[92%] -translate-x-1/2" aria-hidden="true">
+          <circle cx="100" cy="26" r="17" fill="#f59e0b" opacity="0.85" />
+          <path d="M100 44 L142 56 L168 92 L142 100 L142 178 L58 178 L58 100 L32 92 L58 56 Z" fill="#334155" />
+        </svg>
+      </>
+    ),
+    frameStyle: { left: '41.5%', top: '38%', width: '17%', height: '30%' },
+  },
+  {
+    id: 'bed',
+    room: 'The Bedroom',
+    caption: 'Your design, spread across the blanket on the bed.',
+    backdrop: (
+      <>
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg,#e0e7ff 0%,#c7d2fe 62%,#a5b4fc 62.2%,#818cf8 100%)' }} />
+        <div className="absolute left-[16%] top-[30%] w-[68%] h-[10%] rounded-t-xl bg-white/90" />
+        <div className="absolute left-[13%] bottom-0 w-[74%] h-[16%] rounded-t-lg bg-indigo-950/70" />
+      </>
+    ),
+    frameStyle: { left: '17%', top: '40%', width: '66%', height: '46%', transform: 'perspective(500px) rotateX(38deg)', transformOrigin: 'top' },
+    frameClass: 'shadow-2xl',
+  },
+  {
+    id: 'tapestry',
+    room: 'The Wall Hanging',
+    caption: 'Your design, hanging soft as a tapestry.',
+    backdrop: (
+      <>
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg,#f5f5f4 0%,#e7e5e4 100%)' }} />
+        <div className="absolute left-[24%] top-[7%] w-[52%] h-2 rounded bg-amber-900/80" />
+      </>
+    ),
+    frameStyle: { left: '27%', top: '10%', width: '46%', height: '74%', borderRadius: '0 0 46% 46% / 0 0 6% 6%' },
+    frameClass: 'shadow-xl',
+  },
+  {
+    id: 'car',
+    room: 'Your Car',
+    caption: 'Your design, riding on the side of your car.',
+    backdrop: (
+      <>
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg,#bae6fd 0%,#e0f2fe 60%,#64748b 60.2%,#475569 100%)' }} />
+        <svg viewBox="0 0 320 150" className="absolute left-1/2 bottom-[8%] w-[86%] -translate-x-1/2" aria-hidden="true">
+          <path d="M18 96 L44 56 Q52 44 72 42 L238 42 Q258 44 268 58 L292 88 Q300 96 294 102 L286 112 L240 112 A26 26 0 0 0 188 112 L116 112 A26 26 0 0 0 64 112 L24 112 Q12 108 18 96 Z" fill="#0ea5e9" />
+          <rect x="86" y="50" width="60" height="24" rx="4" fill="#e0f2fe" />
+          <rect x="156" y="50" width="60" height="24" rx="4" fill="#e0f2fe" />
+          <circle cx="90" cy="112" r="17" fill="#0f172a" /><circle cx="90" cy="112" r="8" fill="#94a3b8" />
+          <circle cx="214" cy="112" r="17" fill="#0f172a" /><circle cx="214" cy="112" r="8" fill="#94a3b8" />
+        </svg>
+      </>
+    ),
+    frameStyle: { left: '47%', top: '52%', width: '15%', height: '22%', borderRadius: '6px' },
+  },
+  {
+    id: 'floor',
+    room: 'The Floor',
+    caption: 'Your design, underfoot as a rug on the floor.',
+    backdrop: (
+      <>
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg,#fef9c3 0%,#fef08a 52%,#a16207 52.2%,#854d0e 100%)' }} />
+        <div className="absolute left-[8%] top-[8%] w-[20%] h-[30%] rounded bg-amber-950/25" />
+      </>
+    ),
+    frameStyle: { left: '26%', top: '56%', width: '48%', height: '36%', transform: 'perspective(420px) rotateX(52deg)', transformOrigin: 'top' },
+    frameClass: 'shadow-2xl',
+  },
+  {
+    id: 'keychain',
+    room: 'In Your Pocket',
+    caption: 'Your design, small enough to carry everywhere — a keychain.',
+    backdrop: (
+      <>
+        <div className="absolute inset-0" style={{ background: 'radial-gradient(circle at 50% 34%,#fef3c7 0%,#fcd34d 58%,#f59e0b 100%)' }} />
+        <div className="absolute left-1/2 top-[5%] h-[16%] w-3 -translate-x-1/2 rounded bg-slate-400" />
+        <div className="absolute left-1/2 top-[3%] h-10 w-10 -translate-x-1/2 rounded-full border-4 border-slate-300" />
+      </>
+    ),
+    frameStyle: { left: '35%', top: '21%', width: '30%', height: '58%', borderRadius: '9999px', border: '5px solid #d6d3d1' },
+    frameClass: 'shadow-2xl',
+  },
+  {
+    id: 'wallet',
+    room: 'In Your Hands',
+    caption: 'Your design, on a wallet you touch every day.',
+    backdrop: (
+      <>
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg,#dcfce7 0%,#86efac 100%)' }} />
+        <div className="absolute left-1/2 top-[16%] h-[66%] w-[62%] -translate-x-1/2 rounded-2xl bg-amber-950 shadow-2xl" />
+        <div className="absolute left-1/2 top-[16%] h-[66%] w-[62%] -translate-x-1/2 rounded-2xl border-2 border-dashed border-amber-200/40" />
+      </>
+    ),
+    frameStyle: { left: '24%', top: '23%', width: '34%', height: '52%', borderRadius: '10px' },
+  },
+];
+
 export default function Snap2Fit({ onSendToSizeMeUp }: { onSendToSizeMeUp?: (design: import('../types').SharedDesign) => void } = {}) {
   const [image, setImage] = useState<LoadedImage | null>(null);
   const [productId, setProductId] = useState(PRODUCTS[0].id);
@@ -363,6 +529,9 @@ export default function Snap2Fit({ onSendToSizeMeUp }: { onSendToSizeMeUp?: (des
   const [showcaseWorking, setShowcaseWorking] = useState(false);
   const [madeItems, setMadeItems] = useState<MadeItem[]>([]);
   const [makingPicked, setMakingPicked] = useState<string | null>(null);
+  // ---- The Viewing Rooms: see the fantasy alive ----
+  const [fantasyIdx, setFantasyIdx] = useState(0);
+  const [fantasyPlaying, setFantasyPlaying] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -449,6 +618,17 @@ export default function Snap2Fit({ onSendToSizeMeUp }: { onSendToSizeMeUp?: (des
   }, [image, removeBg]);
 
   const effectiveImage = designSource ?? image;
+
+  // The gentle tour: while the tour is playing and a design is here,
+  // the viewing rooms change on their own, one after another.
+  useEffect(() => {
+    if (!fantasyPlaying || !effectiveImage) return;
+    const timer = setInterval(() => {
+      setFantasyIdx((idx) => (idx + 1) % FANTASY_SCENES.length);
+    }, 4200);
+    return () => clearInterval(timer);
+  }, [fantasyPlaying, effectiveImage]);
+  const fantasyScene = FANTASY_SCENES[fantasyIdx % FANTASY_SCENES.length];
 
   const chooseProduct = (id: string) => {
     setProductId(id);
@@ -973,6 +1153,59 @@ export default function Snap2Fit({ onSendToSizeMeUp }: { onSendToSizeMeUp?: (des
                 ))}
               </div>
             )}
+          </>
+        )}
+      </div>
+
+      {/* 6. The Viewing Rooms — see the fantasy alive before you buy */}
+      <div className="p-4 rounded-xl border border-fuchsia-500/30 space-y-4" style={{ background: 'linear-gradient(160deg, rgba(88,28,135,0.25), rgba(15,23,42,0.6))' }}>
+        <style>{`
+          @keyframes fantasyFade { from { opacity: 0; transform: scale(1.04); } to { opacity: 1; transform: scale(1); } }
+          .fantasy-stage-enter { animation: fantasyFade 900ms ease both; }
+        `}</style>
+        <div>
+          <p className="text-sm font-semibold text-fuchsia-200">6. The Viewing Rooms — see the fantasy alive before you buy ✨</p>
+          <p className="text-xs text-slate-300">
+            The shop showed you products. This room shows you the <em>fantasy</em>. Your design, alive at any size, on anything — a building, a billboard, a blanket, a keychain. The rooms change on their own; tap one to step into it.
+          </p>
+        </div>
+        {!effectiveImage && <p className="text-xs text-slate-400">Add a picture first — then step into the rooms and watch it come alive.</p>}
+        {effectiveImage && (
+          <>
+            <div className="relative w-full overflow-hidden rounded-2xl border border-white/10 shadow-2xl" style={{ aspectRatio: '16 / 10' }}>
+              <div key={fantasyScene.id} className="fantasy-stage-enter absolute inset-0">
+                {fantasyScene.backdrop}
+                <div className={`absolute overflow-hidden ${fantasyScene.frameClass ?? ''}`} style={fantasyScene.frameStyle}>
+                  <img src={effectiveImage.url} alt={`Your design in ${fantasyScene.room}`} className="h-full w-full object-cover" />
+                  <div className="pointer-events-none absolute inset-0" style={{ background: 'linear-gradient(160deg, rgba(255,255,255,0.14), rgba(0,0,0,0.10) 60%)' }} />
+                </div>
+              </div>
+              <div className="absolute bottom-0 left-0 right-0 bg-slate-950/70 px-4 py-2 backdrop-blur-sm">
+                <p className="text-sm text-slate-100"><span className="font-semibold text-fuchsia-200">{fantasyScene.room}.</span> {fantasyScene.caption}</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2 items-center">
+              <button
+                type="button"
+                onClick={() => setFantasyPlaying((playing) => !playing)}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium border bg-slate-900 border-fuchsia-500/40 text-fuchsia-200 hover:border-fuchsia-400 transition"
+              >
+                {fantasyPlaying ? '⏸ Pause the tour' : '▶ Let the rooms change on their own'}
+              </button>
+              {FANTASY_SCENES.map((scene, idx) => (
+                <button
+                  key={scene.id}
+                  type="button"
+                  onClick={() => { setFantasyIdx(idx); setFantasyPlaying(false); }}
+                  className={`px-3 py-1.5 rounded-lg text-xs border transition ${
+                    idx === fantasyIdx ? 'bg-fuchsia-500/15 border-fuchsia-400 text-fuchsia-100' : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500'
+                  }`}
+                >
+                  {scene.room}
+                </button>
+              ))}
+            </div>
+            <p className="text-[11px] text-slate-400">These rooms are daydreams — drawings that show the feeling, not photographs of real products. The real, measured pictures are the ones you make and download above.</p>
           </>
         )}
       </div>
