@@ -43,8 +43,9 @@ export class WalmartService {
       throw new Error('Walmart authentication response missing access token');
     }
 
-    this.accessToken = data.access_token;
-    return this.accessToken;
+    const token: string = data.access_token;
+    this.accessToken = token;
+    return token;
   }
 
   public async fetchListings(): Promise<UnifiedProduct[]> {

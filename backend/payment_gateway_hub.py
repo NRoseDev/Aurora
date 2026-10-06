@@ -48,5 +48,3 @@ class PaymentGatewayHub:
             "gateway_source": gateway.upper(),
             "action_required": "PRODUCE_ITEM" if "order_id" in payload else "UPGRADE_USER_TIER"
         }
-
-            return {"status": "error", "message": f"Unsupported platform: {platform}"}

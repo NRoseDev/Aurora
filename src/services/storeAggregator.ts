@@ -1,6 +1,8 @@
 // src/services/storeAggregator.ts
 
 import { UnifiedProduct } from '../types';
+
+export type { UnifiedProduct } from '../types';
 import { WalmartService } from './walmartService';
 import { EbayService } from './ebayService';
 import { WooCommerceService } from './woocommerceService';

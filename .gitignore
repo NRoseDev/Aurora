@@ -4,6 +4,12 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Build output
+dist/
+
+# Local pipeline data created by the Python engine
+aurora_data/
+
 # Python environment settings
 __pycache__/
 *.pyc
