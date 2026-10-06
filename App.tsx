@@ -4,11 +4,17 @@ import { StoreDashboard } from './src/components/StoreDashboard';
 import { OrdersTab } from './src/components/OrdersTab';
 import Scrapbook from './src/components/Scrapbook';
 import Snap2Fit from './src/components/Snap2Fit';
-
-type Page = 'dashboard' | 'orders' | 'analytics' | 'scrapbook' | 'snap2fit';
+import SizeMeUp from './src/components/SizeMeUp';
+import type { Page, SharedDesign } from './src/types';
 
 function App() {
   const [page, setPage] = useState<Page>('dashboard');
+  const [sharedDesign, setSharedDesign] = useState<SharedDesign | null>(null);
+
+  const sendToSizeMeUp = (design: SharedDesign) => {
+    setSharedDesign(design);
+    setPage('sizemeup');
+  };
 
   return (
     <div className="min-h-screen bg-slate-950 p-6 text-slate-100">
@@ -28,7 +34,8 @@ function App() {
           {page === 'dashboard' && <StoreDashboard />}
           {page === 'orders' && <OrdersTab />}
           {page === 'scrapbook' && <Scrapbook />}
-          {page === 'snap2fit' && <Snap2Fit />}
+          {page === 'snap2fit' && <Snap2Fit onSendToSizeMeUp={sendToSizeMeUp} />}
+          {page === 'sizemeup' && <SizeMeUp design={sharedDesign} />}
           {page === 'analytics' && (
             <div className="p-6 text-slate-400">
               Analytics coming online.

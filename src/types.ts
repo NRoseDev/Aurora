@@ -1,4 +1,13 @@
-export type Page = 'dashboard' | 'orders' | 'analytics' | 'scrapbook' | 'snap2fit';
+export type Page = 'dashboard' | 'orders' | 'analytics' | 'scrapbook' | 'snap2fit' | 'sizemeup';
+
+/** A finished design handed from one in-app tool to another (Snap 2 Fit -> Size Me Up). */
+export interface SharedDesign {
+  url: string;
+  name: string;
+  width: number;
+  height: number;
+  productLabel: string;
+}
 
 export type SubscriptionTier = 'free' | 'creator' | 'pro' | 'enterprise';
 
