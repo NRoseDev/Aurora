@@ -488,6 +488,55 @@ const DESIGN_TEMPLATES: Array<{ id: string; label: string; draw: (ctx: CanvasRen
       drawWords(ctx, words, s / 2, s * 0.3, s * 0.84, s * 0.17, pal.ink);
     },
   },
+  {
+    id: 'rainbow',
+    label: 'Rainbow Arch',
+    draw: (ctx, s, words, pal) => {
+      ctx.fillStyle = pal.bg; ctx.fillRect(0, 0, s, s);
+      const bands = [pal.accent, pal.ink, pal.accent, pal.ink, pal.accent];
+      bands.forEach((c, i) => {
+        ctx.strokeStyle = c; ctx.globalAlpha = 0.45 + i * 0.11; ctx.lineWidth = s * 0.045;
+        ctx.beginPath(); ctx.arc(s / 2, s * 0.62, s * (0.36 - i * 0.045), Math.PI, 0); ctx.stroke();
+      });
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = pal.accent;
+      ctx.beginPath(); ctx.arc(s * 0.14, s * 0.62, s * 0.05, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(s * 0.86, s * 0.62, s * 0.05, 0, Math.PI * 2); ctx.fill();
+      drawWords(ctx, words, s / 2, s * 0.8, s * 0.84, s * 0.16, pal.ink);
+    },
+  },
+  {
+    id: 'mountains',
+    label: 'Mountain Sunrise',
+    draw: (ctx, s, words, pal) => {
+      ctx.fillStyle = pal.bg; ctx.fillRect(0, 0, s, s);
+      ctx.fillStyle = pal.accent;
+      ctx.beginPath(); ctx.arc(s / 2, s * 0.52, s * 0.16, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = pal.ink; ctx.globalAlpha = 0.75;
+      ctx.beginPath(); ctx.moveTo(0, s); ctx.lineTo(s * 0.34, s * 0.5); ctx.lineTo(s * 0.62, s); ctx.closePath(); ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.beginPath(); ctx.moveTo(s * 0.3, s); ctx.lineTo(s * 0.68, s * 0.44); ctx.lineTo(s, s); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = pal.bg;
+      ctx.beginPath(); ctx.moveTo(s * 0.615, s * 0.505); ctx.lineTo(s * 0.68, s * 0.44); ctx.lineTo(s * 0.745, s * 0.505); ctx.lineTo(s * 0.68, s * 0.545); ctx.closePath(); ctx.fill();
+      drawWords(ctx, words, s / 2, s * 0.2, s * 0.84, s * 0.16, pal.ink);
+    },
+  },
+  {
+    id: 'heart',
+    label: 'Big Heart',
+    draw: (ctx, s, words, pal) => {
+      ctx.fillStyle = pal.bg; ctx.fillRect(0, 0, s, s);
+      ctx.fillStyle = pal.accent;
+      ctx.beginPath();
+      ctx.moveTo(s / 2, s * 0.88);
+      ctx.bezierCurveTo(s * 0.05, s * 0.55, s * 0.12, s * 0.12, s * 0.36, s * 0.14);
+      ctx.bezierCurveTo(s * 0.46, s * 0.155, s / 2, s * 0.22, s / 2, s * 0.3);
+      ctx.bezierCurveTo(s / 2, s * 0.22, s * 0.54, s * 0.155, s * 0.64, s * 0.14);
+      ctx.bezierCurveTo(s * 0.88, s * 0.12, s * 0.95, s * 0.55, s / 2, s * 0.88);
+      ctx.fill();
+      drawWords(ctx, words, s / 2, s * 0.44, s * 0.56, s * 0.13, pal.bg);
+    },
+  },
 ];
 
 function renderTemplate(templateId: string, words: string, pal: DesignPalette): HTMLCanvasElement {
@@ -504,7 +553,7 @@ function renderTemplate(templateId: string, words: string, pal: DesignPalette): 
 
 // Put several pictures together into ONE design.
 function composeCombined(images: LoadedImage[], layout: 'side' | 'grid' | 'stack'): HTMLCanvasElement {
-  const pickedImages = images.slice(0, 6);
+  const pickedImages = images.slice(0, 10);
   const S = 1800;
   const canvas = document.createElement('canvas');
   let cells: Array<{ x: number; y: number; w: number; h: number }> = [];
@@ -894,7 +943,7 @@ export default function Snap2Fit({ onSendToSizeMeUp }: { onSendToSizeMeUp?: (des
   const handleCombineFiles = async (files: FileList | null) => {
     if (!files) return;
     const loaded: LoadedImage[] = [];
-    for (const file of Array.from(files).slice(0, 6)) {
+    for (const file of Array.from(files).slice(0, 10)) {
       if (!file.type.startsWith('image/')) continue;
       const url = URL.createObjectURL(file);
       try {
@@ -1135,7 +1184,7 @@ export default function Snap2Fit({ onSendToSizeMeUp }: { onSendToSizeMeUp?: (des
           />
           <div className="flex flex-wrap gap-2 items-center">
             <button type="button" onClick={() => combineInputRef.current?.click()} className="px-3 py-2 bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-lg hover:border-emerald-500/50 transition">
-              Choose 2 to 6 pictures
+              Choose 2 to 10 pictures
             </button>
             {combineImages.length > 0 && <span className="text-xs text-slate-400">{combineImages.length} chosen: {combineImages.map((i) => i.name).join(', ')}</span>}
           </div>
