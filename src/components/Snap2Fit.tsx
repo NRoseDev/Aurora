@@ -320,8 +320,7 @@ async function previewForProduct(image: LoadedImage, product: ProductSpec): Prom
   return URL.createObjectURL(blob);
 }
 
-const CATEGORIES = ['Clothing', 'Drinkware', 'Bags & Accessories', 'Prints & Home'];
-const STARTING_PRICES: Record<string, string> = {
+const CATEGORIES = ['Clothing', 'Drinkware', 'Bags & Accessories', 'Prints & Home'];const STARTING_PRICES: Record<string, string> = {
   tshirt: '24',
   hoodie: '39',
   mug: '14',
@@ -336,6 +335,206 @@ const STARTING_PRICES: Record<string, string> = {
 interface MadeItem extends FitResult {
   productId: string;
   price: string;
+}
+
+// ---------------------------------------------------------------------
+// START A DESIGN — Nichole's flow: the design is MADE first, however
+// the user wants, and only then submitted to Snap 2 Fit. Three honest
+// ways in: (1) their own uploaded picture, (2) built-in templates the
+// user fills with their own words and colours, drawn fresh on a
+// canvas at print size, and (3) combining several of their pictures
+// into one design. Outside image generators can plug into this same
+// doorway later — they need the user's own account with that service,
+// so nothing is faked here.
+// ---------------------------------------------------------------------
+interface DesignPalette { bg: string; ink: string; accent: string }
+
+const DESIGN_PALETTES: Array<{ id: string; label: string; palette: DesignPalette }> = [
+  { id: 'sunset', label: 'Sunset', palette: { bg: '#fff7ed', ink: '#9a3412', accent: '#f59e0b' } },
+  { id: 'ocean', label: 'Ocean', palette: { bg: '#eff6ff', ink: '#1e3a8a', accent: '#38bdf8' } },
+  { id: 'forest', label: 'Forest', palette: { bg: '#f0fdf4', ink: '#14532d', accent: '#4ade80' } },
+  { id: 'berry', label: 'Berry', palette: { bg: '#fdf2f8', ink: '#831843', accent: '#f472b6' } },
+  { id: 'night', label: 'Night', palette: { bg: '#0f172a', ink: '#f8fafc', accent: '#facc15' } },
+];
+
+// Draw the user's words, wrapped onto lines, as big as fits.
+function drawWords(ctx: CanvasRenderingContext2D, words: string, cx: number, cy: number, maxWidth: number, startSize: number, color: string) {
+  const clean = words.trim() || 'Your Words';
+  let size = startSize;
+  const linesOf = (s: number): string[] => {
+    ctx.font = `900 ${s}px 'Arial Black', Arial, sans-serif`;
+    const parts = clean.split(/\s+/);
+    const lines: string[] = [];
+    let line = '';
+    for (const part of parts) {
+      const trial = line ? `${line} ${part}` : part;
+      if (ctx.measureText(trial).width <= maxWidth || !line) line = trial;
+      else { lines.push(line); line = part; }
+    }
+    if (line) lines.push(line);
+    return lines;
+  };
+  let lines = linesOf(size);
+  while (size > 40 && lines.some((l) => { ctx.font = `900 ${size}px 'Arial Black', Arial, sans-serif`; return ctx.measureText(l).width > maxWidth; })) {
+    size -= 16;
+    lines = linesOf(size);
+  }
+  ctx.font = `900 ${size}px 'Arial Black', Arial, sans-serif`;
+  ctx.fillStyle = color;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const lineHeight = size * 1.12;
+  const top = cy - ((lines.length - 1) * lineHeight) / 2;
+  lines.forEach((l, i) => ctx.fillText(l, cx, top + i * lineHeight));
+}
+
+const DESIGN_TEMPLATES: Array<{ id: string; label: string; draw: (ctx: CanvasRenderingContext2D, size: number, words: string, pal: DesignPalette) => void }> = [
+  {
+    id: 'bold',
+    label: 'Plain & Bold',
+    draw: (ctx, s, words, pal) => {
+      ctx.fillStyle = pal.bg; ctx.fillRect(0, 0, s, s);
+      ctx.strokeStyle = pal.accent; ctx.lineWidth = s * 0.012;
+      ctx.strokeRect(s * 0.06, s * 0.06, s * 0.88, s * 0.88);
+      drawWords(ctx, words, s / 2, s / 2, s * 0.8, s * 0.21, pal.ink);
+    },
+  },
+  {
+    id: 'sunburst',
+    label: 'Sunburst',
+    draw: (ctx, s, words, pal) => {
+      ctx.fillStyle = pal.bg; ctx.fillRect(0, 0, s, s);
+      ctx.save(); ctx.translate(s / 2, s / 2);
+      for (let i = 0; i < 24; i++) {
+        if (i % 2) continue;
+        ctx.rotate((Math.PI * 2) / 24);
+        ctx.fillStyle = pal.accent; ctx.globalAlpha = 0.5;
+        ctx.beginPath(); ctx.moveTo(0, 0);
+        ctx.arc(0, 0, s * 0.72, -0.07, 0.07); ctx.closePath(); ctx.fill();
+      }
+      ctx.restore(); ctx.globalAlpha = 1;
+      ctx.fillStyle = pal.ink;
+      ctx.beginPath(); ctx.arc(s / 2, s / 2, s * 0.31, 0, Math.PI * 2); ctx.fill();
+      drawWords(ctx, words, s / 2, s / 2, s * 0.5, s * 0.13, pal.bg);
+    },
+  },
+  {
+    id: 'badge',
+    label: 'Circle Badge',
+    draw: (ctx, s, words, pal) => {
+      ctx.fillStyle = pal.bg; ctx.fillRect(0, 0, s, s);
+      ctx.strokeStyle = pal.accent; ctx.lineWidth = s * 0.02;
+      ctx.beginPath(); ctx.arc(s / 2, s / 2, s * 0.4, 0, Math.PI * 2); ctx.stroke();
+      ctx.lineWidth = s * 0.006;
+      ctx.beginPath(); ctx.arc(s / 2, s / 2, s * 0.35, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = pal.accent;
+      ctx.font = `${Math.round(s * 0.09)}px Arial`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('★ ★ ★', s / 2, s * 0.3);
+      ctx.fillText('★ ★ ★', s / 2, s * 0.7);
+      drawWords(ctx, words, s / 2, s / 2, s * 0.6, s * 0.15, pal.ink);
+    },
+  },
+  {
+    id: 'stripes',
+    label: 'Retro Stripes',
+    draw: (ctx, s, words, pal) => {
+      ctx.fillStyle = pal.bg; ctx.fillRect(0, 0, s, s);
+      const bands = [pal.accent, pal.ink, pal.accent];
+      bands.forEach((c, i) => { ctx.fillStyle = c; ctx.globalAlpha = 0.85 - i * 0.2; ctx.fillRect(0, s * (0.12 + i * 0.07), s, s * 0.045); });
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = pal.ink; ctx.fillRect(0, s * 0.36, s, s * 0.28);
+      drawWords(ctx, words, s / 2, s / 2, s * 0.84, s * 0.16, pal.bg);
+      bands.forEach((c, i) => { ctx.fillStyle = c; ctx.globalAlpha = 0.85 - i * 0.2; ctx.fillRect(0, s * (0.72 + i * 0.07), s, s * 0.045); });
+      ctx.globalAlpha = 1;
+    },
+  },
+  {
+    id: 'stars',
+    label: 'Star Field',
+    draw: (ctx, s, words, pal) => {
+      ctx.fillStyle = pal.ink === '#f8fafc' ? pal.bg : '#111827'; ctx.fillRect(0, 0, s, s);
+      // Deterministic little stars (same design every time for same words).
+      let seed = words.length * 131 + 7;
+      const rand = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; };
+      ctx.fillStyle = pal.accent;
+      for (let i = 0; i < 130; i++) {
+        const x = rand() * s, y = rand() * s, r = 2 + rand() * 6;
+        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.save();
+      ctx.shadowColor = pal.accent; ctx.shadowBlur = s * 0.03;
+      drawWords(ctx, words, s / 2, s / 2, s * 0.82, s * 0.19, pal.accent);
+      ctx.restore();
+    },
+  },
+  {
+    id: 'waves',
+    label: 'Waves',
+    draw: (ctx, s, words, pal) => {
+      ctx.fillStyle = pal.bg; ctx.fillRect(0, 0, s, s);
+      for (let band = 0; band < 4; band++) {
+        ctx.fillStyle = pal.accent; ctx.globalAlpha = 0.3 + band * 0.18;
+        ctx.beginPath();
+        const baseY = s * (0.55 + band * 0.11);
+        ctx.moveTo(0, s);
+        ctx.lineTo(0, baseY);
+        for (let x = 0; x <= s; x += s / 24) {
+          ctx.lineTo(x, baseY + Math.sin(x / s * Math.PI * 2 + band * 1.3) * s * 0.035);
+        }
+        ctx.lineTo(s, s); ctx.closePath(); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      drawWords(ctx, words, s / 2, s * 0.3, s * 0.84, s * 0.17, pal.ink);
+    },
+  },
+];
+
+function renderTemplate(templateId: string, words: string, pal: DesignPalette): HTMLCanvasElement {
+  const template = DESIGN_TEMPLATES.find((t) => t.id === templateId) ?? DESIGN_TEMPLATES[0];
+  const size = 1600;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Your browser could not create a picture canvas.');
+  template.draw(ctx, size, words, pal);
+  return canvas;
+}
+
+// Put several pictures together into ONE design.
+function composeCombined(images: LoadedImage[], layout: 'side' | 'grid' | 'stack'): HTMLCanvasElement {
+  const pickedImages = images.slice(0, 6);
+  const S = 1800;
+  const canvas = document.createElement('canvas');
+  let cells: Array<{ x: number; y: number; w: number; h: number }> = [];
+  if (layout === 'side') {
+    canvas.width = S; canvas.height = 1200;
+    const w = S / pickedImages.length;
+    cells = pickedImages.map((_, i) => ({ x: i * w, y: 0, w, h: canvas.height }));
+  } else if (layout === 'stack') {
+    canvas.width = S; canvas.height = S;
+    const h = S / pickedImages.length;
+    cells = pickedImages.map((_, i) => ({ x: 0, y: i * h, w: S, h }));
+  } else {
+    canvas.width = S; canvas.height = S;
+    const cols = Math.ceil(Math.sqrt(pickedImages.length));
+    const rows = Math.ceil(pickedImages.length / cols);
+    const w = S / cols; const h = S / rows;
+    cells = pickedImages.map((_, i) => ({ x: (i % cols) * w, y: Math.floor(i / cols) * h, w, h }));
+  }
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Your browser could not create a picture canvas.');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  pickedImages.forEach((img, i) => {
+    const cell = cells[i];
+    const scale = Math.max(cell.w / img.width, cell.h / img.height);
+    const dw = img.width * scale;
+    const dh = img.height * scale;
+    ctx.drawImage(img.element, cell.x + (cell.w - dw) / 2, cell.y + (cell.h - dh) / 2, dw, dh);
+  });
+  return canvas;
 }
 
 // ---------------------------------------------------------------------
@@ -538,6 +737,13 @@ export default function Snap2Fit({ onSendToSizeMeUp }: { onSendToSizeMeUp?: (des
   const [estKept, setEstKept] = useState('0');
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  // ---- Start a design: templates & combining ----
+  const [templateId, setTemplateId] = useState(DESIGN_TEMPLATES[0].id);
+  const [templateWords, setTemplateWords] = useState('Dream Big');
+  const [paletteId, setPaletteId] = useState(DESIGN_PALETTES[0].id);
+  const [combineImages, setCombineImages] = useState<LoadedImage[]>([]);
+  const [combineLayout, setCombineLayout] = useState<'side' | 'grid' | 'stack'>('grid');
+  const combineInputRef = useRef<HTMLInputElement | null>(null);
 
   const customProduct = useMemo<ProductSpec | null>(() => {
     const w = Math.round(parseFloat(customWidthIn) * parseFloat(customDpi));
@@ -658,6 +864,56 @@ export default function Snap2Fit({ onSendToSizeMeUp }: { onSendToSizeMeUp?: (des
       URL.revokeObjectURL(url);
       setError('That file could not be read as a picture.');
     }
+  };
+
+  // Any finished design canvas (template, combined pictures) becomes
+  // THE design — the same doorway an uploaded picture comes through.
+  const setDesignFromCanvas = async (canvas: HTMLCanvasElement, name: string) => {
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+    if (!blob) {
+      setError('That design could not be made. Please try again.');
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    try {
+      const measured = await measureImage(url);
+      setError(null);
+      setResult(null);
+      setImage({ url, name, width: measured.width, height: measured.height, sizeBytes: blob.size, element: measured.element });
+    } catch {
+      URL.revokeObjectURL(url);
+      setError('That design could not be read as a picture.');
+    }
+  };
+
+  const handleTemplate = async () => {
+    const pal = (DESIGN_PALETTES.find((p) => p.id === paletteId) ?? DESIGN_PALETTES[0]).palette;
+    await setDesignFromCanvas(renderTemplate(templateId, templateWords, pal), 'my-template-design.png');
+  };
+
+  const handleCombineFiles = async (files: FileList | null) => {
+    if (!files) return;
+    const loaded: LoadedImage[] = [];
+    for (const file of Array.from(files).slice(0, 6)) {
+      if (!file.type.startsWith('image/')) continue;
+      const url = URL.createObjectURL(file);
+      try {
+        const measured = await measureImage(url);
+        loaded.push({ url, name: file.name, width: measured.width, height: measured.height, sizeBytes: file.size, element: measured.element });
+      } catch {
+        URL.revokeObjectURL(url);
+      }
+    }
+    if (loaded.length > 0) setCombineImages(loaded);
+    else setError('Please choose picture files (for example PNG or JPG) to combine.');
+  };
+
+  const handleCombine = async () => {
+    if (combineImages.length < 2) {
+      setError('Choose at least two pictures to combine into one design.');
+      return;
+    }
+    await setDesignFromCanvas(composeCombined(combineImages, combineLayout), 'my-combined-design.png');
   };
 
   const handleFit = async () => {
@@ -810,9 +1066,10 @@ export default function Snap2Fit({ onSendToSizeMeUp }: { onSendToSizeMeUp?: (des
         </p>
       </div>
 
-      {/* 1. Upload */}
+      {/* 1. Start your design — made any way you like, then fitted here */}
       <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-800 space-y-3">
-        <p className="text-sm font-semibold text-slate-200">1. Add your design</p>
+        <p className="text-sm font-semibold text-slate-200">1. Start your design</p>
+        <p className="text-xs text-slate-400">Make it however you like — upload your own picture, start from a template with your own words, or put several pictures together into one design.</p>
         <input
           ref={fileInputRef}
           type="file"
@@ -830,6 +1087,76 @@ export default function Snap2Fit({ onSendToSizeMeUp }: { onSendToSizeMeUp?: (des
         >
           {image ? 'Choose a different picture' : 'Upload a picture'}
         </button>
+
+        <div className="pt-2 border-t border-slate-700/60 space-y-2">
+          <p className="text-sm font-medium text-slate-200">Or start from a template</p>
+          <div className="flex flex-wrap gap-2 items-end">
+            <label className="text-xs text-slate-400">
+              Your words
+              <input value={templateWords} onChange={(e) => setTemplateWords(e.target.value)} className="block mt-1 px-2 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-100 w-48" placeholder="Dream Big" />
+            </label>
+            <label className="text-xs text-slate-400">
+              Colours
+              <select value={paletteId} onChange={(e) => setPaletteId(e.target.value)} className="block mt-1 px-2 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-100">
+                {DESIGN_PALETTES.map((p) => (<option key={p.id} value={p.id}>{p.label}</option>))}
+              </select>
+            </label>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {DESIGN_TEMPLATES.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setTemplateId(t.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs border transition ${templateId === t.id ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300' : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500'}`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <button type="button" onClick={() => void handleTemplate()} className="px-4 py-2 bg-slate-100 text-slate-900 text-sm font-semibold rounded-lg hover:bg-white transition">
+            Make this design
+          </button>
+          <p className="text-[11px] text-slate-500">Templates are drawn fresh for you at print size, with your words. Image generators from outside Aurora can plug into this same doorway later — they need your own account with that service.</p>
+        </div>
+
+        <div className="pt-2 border-t border-slate-700/60 space-y-2">
+          <p className="text-sm font-medium text-slate-200">Or combine your pictures into one design</p>
+          <input
+            ref={combineInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={(event) => {
+              void handleCombineFiles(event.target.files);
+              event.target.value = '';
+            }}
+          />
+          <div className="flex flex-wrap gap-2 items-center">
+            <button type="button" onClick={() => combineInputRef.current?.click()} className="px-3 py-2 bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-lg hover:border-emerald-500/50 transition">
+              Choose 2 to 6 pictures
+            </button>
+            {combineImages.length > 0 && <span className="text-xs text-slate-400">{combineImages.length} chosen: {combineImages.map((i) => i.name).join(', ')}</span>}
+          </div>
+          {combineImages.length >= 2 && (
+            <div className="flex flex-wrap gap-2 items-center">
+              {([['grid', 'In a grid'], ['side', 'Side by side'], ['stack', 'Stacked up']] as const).map(([layout, label]) => (
+                <button
+                  key={layout}
+                  type="button"
+                  onClick={() => setCombineLayout(layout)}
+                  className={`px-3 py-1.5 rounded-lg text-xs border transition ${combineLayout === layout ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300' : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500'}`}
+                >
+                  {label}
+                </button>
+              ))}
+              <button type="button" onClick={() => void handleCombine()} className="px-4 py-2 bg-slate-100 text-slate-900 text-sm font-semibold rounded-lg hover:bg-white transition">
+                Put them together
+              </button>
+            </div>
+          )}
+        </div>
         {image && (
           <p className="text-sm text-slate-300">
             <span className="font-medium text-slate-100">{image.name}</span>
